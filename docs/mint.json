@@ -1,0 +1,69 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "CYPHER SWARM",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#FF4500",
+    "light": "#FF6347",
+    "dark": "#DC143C",
+    "anchors": {
+      "from": "#FF4500",
+      "to": "#FF6347"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/kingbootoshi/cypher-swarm"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "/quickstart"
+  },
+  "tabs": [
+    {
+      "name": "API Reference",
+      "url": "api-reference"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "Documentation",
+      "icon": "book-open-cover",
+      "url": "/introduction"
+    },
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/kingbootoshi/cypher-swarm"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart"
+      ]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": [
+        "concepts/unified-personality",
+        "concepts/terminal-agent",
+        "concepts/agent-system",
+        "concepts/hivemind-memory",
+        "concepts/pipelines",
+        "concepts/terminal-commands"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/kingbootoshi/cypher-swarm"
+  }
+}

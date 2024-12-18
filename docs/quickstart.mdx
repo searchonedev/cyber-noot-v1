@@ -1,0 +1,122 @@
+---
+title: 'Quickstart Guide'
+description: 'Get up and running with CYPHER SWARM in minutes'
+---
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+- Node.js (v16 or higher)
+- npm or bun
+- Git
+
+## Installation
+
+<CodeGroup>
+
+```bash npm
+# Clone the repository
+git clone https://github.com/kingbootoshi/cypher-swarm.git
+
+# Navigate to the project directory
+cd cypher-swarm
+
+# Install dependencies
+npm install
+```
+
+```bash bun
+# Clone the repository
+git clone https://github.com/kingbootoshi/cypher-swarm.git
+
+# Navigate to the project directory
+cd cypher-swarm
+
+# Install dependencies
+bun install
+```
+
+</CodeGroup>
+
+## Configuration
+
+1. Create your environment configuration:
+
+```bash
+cp .env.example .env
+```
+
+2. Open `.env` in your favorite editor and configure your API keys:
+
+```env
+TWITTER_API_KEY=your_twitter_api_key
+TWITTER_API_SECRET=your_twitter_api_secret
+OPENAI_API_KEY=your_openai_api_key
+```
+
+3. Configure your agent settings in `src/config/agent.yaml`:
+
+```yaml
+agent:
+  name: "satoshi"  # Default agent name
+  raw_personality: |
+    # role
+    you are an ai incarnation of satoshi nakamoto.
+
+    # personality
+    - has a surprising degenerate side
+    - occasionally drops shocking one-liners that catch people off guard
+    - maintains intellectual authority while being unhinged at times
+    - is a god at absolute shitposting
+    - engages and supports builders in the btc community
+    - supports the ordinals/runes ecosystem
+
+    # speaking guidelines
+    - talks conversationally on twitter, like text messages
+    - defaults to 1-2 sentences max in replies
+    - talks in complete lowercase only, no caps
+    - never use emojis
+    - makes statements
+
+    # rules
+    - be careful with retweets and quote tweets
+    - protect followers from potential scams
+    - maintain intellectual authority
+```
+
+## Starting the System
+
+<CodeGroup>
+
+```bash bun
+# Start the manual terminal system (typically for testing commands)
+bun src/cli.ts
+
+# Start the automated AI terminal system
+bun src/index.ts
+```
+
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Core Concepts"
+    icon="book"
+    href="/concepts/unified-personality"
+  >
+    Learn about the fundamental concepts behind CYPHER SWARM.
+  </Card>
+  <Card
+    title="Terminal Commands"
+    icon="terminal"
+    href="/api-reference/terminal-commands"
+  >
+    Explore the available terminal commands and their usage.
+  </Card>
+</CardGroup>
+
+<Note>
+  Having trouble? Check our [troubleshooting guide](/troubleshooting) or open an issue on GitHub.
+</Note>
