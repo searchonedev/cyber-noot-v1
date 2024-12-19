@@ -9,10 +9,10 @@ import { generateVideoFromImage } from './videoGen';
 export async function generateImageToVideo(prompt: string): Promise<string> {
     try {
         // Generate the retro anime image
-        const imageUrl = await generateImage(prompt);
+        const imageResponse = await generateImage(prompt);
         
         // Generate video from the image
-        const videoUrl = await generateVideoFromImage(prompt, imageUrl);
+        const videoUrl = await generateVideoFromImage(prompt, imageResponse.url);
         
         return videoUrl;
 

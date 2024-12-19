@@ -1,0 +1,1 @@
+export { testImageGeneration } from './generateImage'; 

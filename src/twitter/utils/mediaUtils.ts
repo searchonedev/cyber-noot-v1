@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import { URL } from 'url';
 import { fileTypeFromBuffer } from 'file-type';
+import { Logger } from '../../utils/logger';
 
 /**
  * Determines the media type based on URL or file extension
@@ -31,7 +32,7 @@ export function getMediaType(url: string): string {
     // If no extension or unrecognized, try to detect from response headers
     return 'application/octet-stream'; // Fallback type
   } catch (error) {
-    console.error('Error determining media type:', error);
+    Logger.log('Error determining media type:', error);
     return 'application/octet-stream';
   }
 }
@@ -43,6 +44,8 @@ export function getMediaType(url: string): string {
  */
 async function fetchMediaFromUrl(url: string): Promise<{ data: Buffer; mediaType: string }> {
   try {
+    Logger.log('Fetching media from URL:', url);
+    
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -50,14 +53,17 @@ async function fetchMediaFromUrl(url: string): Promise<{ data: Buffer; mediaType
     
     // Read the response buffer
     const buffer = Buffer.from(await response.arrayBuffer());
+    Logger.log('Successfully downloaded media, size:', buffer.length);
     
     // Get content type from response headers
     let contentType = response.headers.get('content-type');
+    Logger.log('Content-Type from headers:', contentType);
     
     // If content-type is missing or generic, detect it from buffer
     if (!contentType || contentType === 'application/octet-stream') {
       const fileTypeResult = await fileTypeFromBuffer(buffer);
-      contentType = fileTypeResult ? fileTypeResult.mime : 'application/octet-stream';
+      contentType = fileTypeResult ? fileTypeResult.mime : 'image/jpeg'; // Default to JPEG for GLIF/FAL
+      Logger.log('Detected content type:', contentType);
     }
     
     return {
@@ -65,7 +71,7 @@ async function fetchMediaFromUrl(url: string): Promise<{ data: Buffer; mediaType
       mediaType: contentType
     };
   } catch (error) {
-    console.error(`Error fetching media from URL ${url}:`, error);
+    Logger.log(`Error fetching media from URL ${url}:`, error);
     throw error;
   }
 }
@@ -76,16 +82,21 @@ async function fetchMediaFromUrl(url: string): Promise<{ data: Buffer; mediaType
  * @returns Promise with prepared media data array
  */
 export async function prepareMediaData(urls: string[]): Promise<Array<{ data: Buffer; mediaType: string; }>> {
+  Logger.log('Preparing media data for URLs:', urls);
+  
   const mediaData = [];
   for (const url of urls) {
     try {
       const data = await fetchMediaFromUrl(url);
       if (data) {
         mediaData.push(data);
+        Logger.log('Successfully prepared media from URL:', url);
       }
     } catch (error) {
-      console.error(`Error preparing media from URL ${url}:`, error);
+      Logger.log(`Error preparing media from URL ${url}:`, error);
     }
   }
+  
+  Logger.log('Total media items prepared:', mediaData.length);
   return mediaData;
 } 

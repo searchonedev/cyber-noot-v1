@@ -15,12 +15,25 @@ export async function sendTweet(
   mediaUrls?: string[]
 ): Promise<string | null> {
   try {
+    Logger.log('Preparing to send tweet with text:', text);
+    if (mediaUrls?.length) {
+      Logger.log('Media URLs to process:', mediaUrls);
+    }
+
     // Prepare media data for Twitter API
-    const mediaData = mediaUrls ? await prepareMediaData(mediaUrls) : undefined;
+    let mediaData;
+    if (mediaUrls?.length) {
+      Logger.log('Preparing media data...');
+      mediaData = await prepareMediaData(mediaUrls);
+      Logger.log('Media data prepared:', mediaData.length, 'items');
+    }
 
     // Send the tweet using the Twitter client
+    Logger.log('Sending tweet to Twitter...');
     const response = await scraper.sendTweet(text, undefined, mediaData);
     const responseData = await response.json();
+    Logger.log('Twitter API response:', responseData);
+
     const tweetId = responseData?.data?.create_tweet?.tweet_results?.result?.rest_id;
 
     if (tweetId) {
@@ -52,6 +65,9 @@ export async function sendTweet(
     }
   } catch (error) {
     Logger.log('Error sending tweet:', error);
+    if (error.response) {
+      Logger.log('Twitter API error response:', await error.response.json());
+    }
     return null;
   }
 }

@@ -79,9 +79,9 @@ export async function generateAndPostMainTweet(
       const generatedMediaPrompt = mediaResponse.output.media_prompt;
 
       if (contentType === 'image') {
-        const mediaUrl = await generateImage(generatedMediaPrompt);
-        mediaUrls = [mediaUrl];
-        Logger.log("Generated Image URL:", mediaUrl);
+        const mediaResponse = await generateImage(generatedMediaPrompt);
+        mediaUrls = [mediaResponse.url];
+        Logger.log(`Generated Image URL (using ${mediaResponse.provider}):`, mediaResponse.url);
       } else if (contentType === 'video') {
         const mediaUrl = await generateImageToVideo(generatedMediaPrompt);
         mediaUrls = [mediaUrl];
