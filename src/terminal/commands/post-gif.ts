@@ -9,19 +9,21 @@ import { Logger } from '../../utils/logger';
  */
 export const postGifCommand: Command = {
   name: 'post-gif',
-  description: 'Posts a tweet with a Tenor GIF. Requires tweet text and GIF search term.',
+  description: 'Posts a tweet with a Tenor GIF. Usage: post-gif -t "tweet text" -m "gif search term"',
   parameters: [
     {
       name: 'text',
       description: 'The text content of the tweet',
       required: true,
-      type: 'string'
+      type: 'string',
+      flag: 't'
     },
     {
-      name: 'gif_search',
+      name: 'media_search',
       description: 'Search term to find a GIF on Tenor',
       required: true,
-      type: 'string'
+      type: 'string',
+      flag: 'm'
     }
   ],
   handler: async (args) => {
@@ -36,24 +38,29 @@ export const postGifCommand: Command = {
         };
       }
 
+      // Parse command line arguments
+      const tweetText = args.t || args.text;
+      const gifSearch = args.m || args.media_search;
+
       // Validate input
-      if (!args.text || !args.gif_search) {
+      if (!tweetText || !gifSearch) {
         return {
           output: '❌ Action: Post GIF Tweet\n' +
                  'Status: Failed\n' +
-                 'Reason: Both tweet text and GIF search term are required.'
+                 'Reason: Both tweet text (-t) and GIF search term (-m) are required.\n' +
+                 'Usage: post-gif -t "tweet text" -m "gif search term"'
         };
       }
 
       // Post tweet with GIF
-      const result = await postTweetWithTenorGif(args.text, args.gif_search);
+      const result = await postTweetWithTenorGif(tweetText, gifSearch);
 
       return {
-        output: `${result.success ? '✅' : '��'} Action: Post GIF Tweet\n` +
+        output: `${result.success ? '✅' : '❌'} Action: Post GIF Tweet\n` +
                `Status: ${result.success ? 'Success' : 'Failed'}\n` +
                `${result.tweetId ? `Tweet ID: ${result.tweetId}\n` : ''}` +
-               `Text: ${args.text}\n` +
-               `GIF Search: ${args.gif_search}\n` +
+               `Tweet Text: ${tweetText}\n` +
+               `GIF Search Term: ${gifSearch}\n` +
                `Details: ${result.message}`
       };
     } catch (error) {

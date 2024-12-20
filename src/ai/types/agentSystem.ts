@@ -31,7 +31,7 @@ export interface Tool {
   };
 }
 
-export type ModelType = 'openai' | 'fireworks' | 'anthropic';
+export type ModelType = 'openai' | 'fireworks' | 'anthropic' | 'grok';
 
 export interface ModelClient {
   modelType: ModelType;

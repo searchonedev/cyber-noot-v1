@@ -7,11 +7,23 @@ import { getFormattedRecentHistory } from '../supabase/functions/terminal/termin
 import { generateImage } from './mediaGeneration/imageGen';
 import { Logger } from '../utils/logger';
 import { MainTweetResult } from './types';
-import { formatTweet } from '../twitter/utils/formatTweet';
+import { isCooldownActive } from '../supabase/functions/twitter/cooldowns';
 
 export async function generateAndPostMediaTweet(): Promise<MainTweetResult> {
   Logger.enable();
   try {
+    // Check for media tweet cooldown first - before any expensive operations
+    const cooldownInfo = await isCooldownActive('media');
+    if (cooldownInfo.isActive) {
+      Logger.log(`Media tweet cooldown active for ${cooldownInfo.remainingTime} minutes. Skipping tweet generation.`);
+      return {
+        success: false,
+        message: `Cannot post media tweet right now. Cooldown is active for ${cooldownInfo.remainingTime} minutes.`,
+        tweetText: '',
+      };
+    }
+
+    // Only proceed with expensive operations if cooldown is not active
     // Initialize AI clients and agents
     const anthropicClient = new AnthropicClient("claude-3-5-sonnet-20241022");
     const mainTweetAgent = new MainTweetAgent(anthropicClient);
@@ -37,7 +49,7 @@ export async function generateAndPostMediaTweet(): Promise<MainTweetResult> {
     }
 
     // Format the tweet text with proper line breaks
-    const tweetText = formatTweet(mainTweetResponse.output.main_tweet);
+    const tweetText = mainTweetResponse.output.main_tweet;
     const mediaIncluded = mainTweetResponse.output.media_included;
 
     // Let the agent decide if media should be included
@@ -75,11 +87,14 @@ export async function generateAndPostMediaTweet(): Promise<MainTweetResult> {
     }
 
   } catch (error) {
-    Logger.error('Error generating and posting tweet:', error);
+    Logger.log('Error generating and posting tweet:', error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Unknown error occurred',
-      tweetText: 'Tweet generation failed',
+      message: error instanceof Error ? 
+        `Media tweet generation failed: ${error.message}` : 
+        'Unknown error occurred during media tweet generation',
+      tweetText: '',
+      mediaUrls: undefined
     };
   }
 }

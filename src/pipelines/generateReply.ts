@@ -1,12 +1,12 @@
 import { assembleTwitterInterface } from '../twitter/utils/imageUtils';
 import { ReplyAgent } from '../ai/agents/replyAgent/replyAgent';
+import { ReflectionAgent } from '../ai/agents/reflectionAgent/reflectionAgent';
 import { Logger } from '../utils/logger';
-import { OpenAIClient } from '../ai/models/clients/OpenAiClient';
 import { AnthropicClient } from '../ai/models/clients/AnthropicClient';
 import { replyToTweet } from '../twitter/functions/replyToTweet';
 import { loadMemories } from './loadMemories';
-import { searchTenorGif, downloadGif } from '../twitter/utils/gifUtils';
-import { generateImage } from './mediaGeneration/imageGen';
+import { searchTenorGif } from '../twitter/utils/gifUtils';
+import { isCooldownActive } from '../supabase/functions/twitter/cooldowns';
 
 // Type for the reply result
 interface ReplyResult {
@@ -15,71 +15,124 @@ interface ReplyResult {
   message: string;
   replyText: string;
   mediaUrls?: string[];
+  reflection?: {
+    quality_score: number;
+    relevance_score: number;
+    critique: string;
+  };
 }
 
 /**
  * Enhanced pipeline that handles the entire reply process including:
  * - Interface assembly
  * - Reply generation
+ * - Quality control through reflection
+ * - Media handling (GIFs)
  * - Tweet posting
  * - Result formatting
  */
-export async function generateAndPostTweetReply(
+export async function generateAndPostReply(
   tweetId: string,
-  mediaUrls?: string[],
-  prompt = "What would you reply to this tweet?"
+  textOrPrompt: string = "What would you reply to this tweet?"
 ): Promise<ReplyResult> {
   Logger.enable();
   try {
+    // Check for reply cooldown first - before any expensive operations
+    const cooldownInfo = await isCooldownActive('reply');
+    if (cooldownInfo.isActive) {
+      Logger.log(`Reply cooldown active for ${cooldownInfo.remainingTime} minutes. Skipping tweet generation.`);
+      return {
+        success: false,
+        message: `Cannot reply right now. Cooldown is active for ${cooldownInfo.remainingTime} minutes.`,
+        replyText: '',
+      };
+    }
+
+    // Only proceed with expensive operations if cooldown is not active
     // Assemble Twitter interface
     const { textContent, imageContents, usernames } = await assembleTwitterInterface(tweetId);
     
-    // Generate AI reply
-    const response = await generateTweetReply(tweetId, prompt, textContent, imageContents, usernames);
+    // If textOrPrompt starts with "!", treat it as a prompt, otherwise use it as direct text
+    const isPrompt = textOrPrompt.startsWith("!");
+    let replyText: string;
     
-    // Handle different media types
-    let result;
-    if (response.media_type === 'gif' && response.gif_search_term) {
-      // Search and download GIF from Tenor
-      const gifUrl = await searchTenorGif(response.gif_search_term);
-      if (gifUrl) {
-        const gifBuffer = await downloadGif(gifUrl);
-        if (gifBuffer) {
-          // Post reply with GIF
-          result = await replyToTweet(
-            tweetId, 
-            response.reply_tweet, 
-            undefined,
-            textContent,
-            [{ data: gifBuffer, mediaType: 'image/gif' }]
-          );
-        } else {
-          // Fallback to text-only reply if GIF download fails
-          result = await replyToTweet(tweetId, response.reply_tweet, undefined, textContent);
-        }
-      } else {
-        // Fallback to text-only reply if GIF search fails
-        result = await replyToTweet(tweetId, response.reply_tweet, undefined, textContent);
-      }
-    } else if (response.media_type === 'image') {
-      // Generate and post tweet with AI-generated image
-      const mediaUrl = await generateImage(response.reply_tweet);
-      result = await replyToTweet(tweetId, response.reply_tweet, mediaUrl ? [mediaUrl] : undefined, textContent);
+    if (isPrompt) {
+      // Generate AI reply using prompt
+      const replyResponse = await generateTweetReply(tweetId, textOrPrompt.substring(1), textContent, imageContents, usernames);
+      replyText = replyResponse.reply_tweet;
     } else {
-      // Post regular text tweet
-      result = await replyToTweet(tweetId, response.reply_tweet, undefined, textContent);
+      // Use direct text input
+      replyText = textOrPrompt;
     }
+
+    // Initialize reflection agent
+    const anthropicClient = new AnthropicClient("claude-3-5-sonnet-20241022");
+    const reflectionAgent = new ReflectionAgent(anthropicClient);
+
+    // Reflect on the reply before proceeding
+    const reflectionContext = `
+Original tweet being replied to:
+${textContent}
+
+Reply ${isPrompt ? 'generated in response to prompt' : 'provided directly'}: "${textOrPrompt}"
+
+Images in original tweet: ${imageContents?.length || 0}
+Usernames mentioned: ${usernames?.join(', ') || 'none'}`;
+
+    const reflection = await reflectionAgent.analyzeTweet(replyText, reflectionContext);
+    Logger.log('Reply reflection:', JSON.stringify(reflection, null, 2));
+
+    // If reflection suggests not to post, try to use improved version or throw error
+    if (!reflection.should_post) {
+      if (reflection.improved_version) {
+        Logger.log('Using improved version suggested by reflection');
+        replyText = reflection.improved_version;
+      } else {
+        throw new Error(`Reply rejected by reflection: ${reflection.critique}`);
+      }
+    }
+
+    // Handle media (GIF) if specified - only for AI-generated replies
+    let mediaUrls: string[] | undefined;
+    if (isPrompt) {
+      const replyResponse = await generateTweetReply(tweetId, textOrPrompt.substring(1), textContent, imageContents, usernames);
+      if (replyResponse.media_type === 'gif' && replyResponse.gif_search_term) {
+        const gifUrl = await searchTenorGif(replyResponse.gif_search_term);
+        if (gifUrl) {
+          mediaUrls = [gifUrl];
+        }
+      }
+    }
+    
+    // Post the reply
+    const result = await replyToTweet(tweetId, replyText, mediaUrls);
     
     return {
       success: result.success,
       tweetId: result.tweetId,
       message: result.message,
-      replyText: response.reply_tweet,
-      mediaUrls: response.media_type === 'gif' ? [response.gif_search_term || ''] : mediaUrls
+      replyText: replyText,
+      mediaUrls,
+      reflection: {
+        quality_score: reflection.quality_score,
+        relevance_score: reflection.relevance_score,
+        critique: reflection.critique,
+      }
     };
   } catch (error) {
     Logger.log('Failed to generate and post reply:', error);
-    throw error;
+    return {
+      success: false,
+      message: error instanceof Error ? 
+        `Reply generation failed: ${error.message}` : 
+        'Unknown error occurred during reply generation',
+      replyText: '',
+      reflection: {
+        quality_score: 0,
+        relevance_score: 0,
+        critique: error instanceof Error ? error.message : 'Generation failed'
+      }
+    };
   }
 }
 
@@ -116,8 +169,7 @@ async function generateTweetReply(
     memories: memories
   };
 
-  // Initialize OpenAI client and reply agent
-  const openAIClient = new OpenAIClient("gpt-4o");
+  // Initialize Anthropic client and reply agent
   const anthropicClient = new AnthropicClient("claude-3-5-sonnet-20241022");
   const replyAgent = new ReplyAgent(anthropicClient);
 

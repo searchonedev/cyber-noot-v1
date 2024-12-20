@@ -25,7 +25,7 @@ async function insertTestSummaries(count: number, type: 'short' | 'mid' | 'long'
 /**
  * Main function to populate summaries and run tests.
  */
-async function runTest() {
+export async function runTest() {
   try {
     Logger.log('Starting test to populate summaries...');
 

@@ -10,8 +10,10 @@ import {
   
   Logger.enable();
   
-  // Test function to run all memory searches
-  async function testMemorySearches() {
+  /**
+   * Test function to run all memory searches
+   */
+  export async function testMemorySearches() {
     try {
       // Test search queries
       const testQuery = "bitcoin, ai, crypto, blockchain";

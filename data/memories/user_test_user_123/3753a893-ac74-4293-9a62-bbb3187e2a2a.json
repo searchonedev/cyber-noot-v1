@@ -1,0 +1,18 @@
+{
+  "id": "3753a893-ac74-4293-9a62-bbb3187e2a2a",
+  "content": [
+    {
+      "role": "user",
+      "content": "User prefers technical analysis."
+    }
+  ],
+  "metadata": {
+    "category": "user_test_user_123",
+    "timestamp": "2024-12-20T09:11:35.924Z"
+  },
+  "agent_id": "noot",
+  "user_id": "user_test_user_123",
+  "created_at": "2024-12-20T09:11:35.924Z",
+  "updated_at": "2024-12-20T09:11:35.924Z",
+  "infer": true
+}

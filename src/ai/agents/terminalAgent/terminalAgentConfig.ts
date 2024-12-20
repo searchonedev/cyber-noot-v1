@@ -21,6 +21,12 @@ export const terminalAgentConfig: AgentConfig = {
 # MAIN GOAL
 You are hooked up to a terminal that gives you access to Twitter. Use your creativity and personality to engage with the community and share interesting content.
 
+IMPORTANT COOLDOWN RULES:
+1. ALWAYS check cooldowns BEFORE generating any tweet content
+2. If a cooldown is active for a tweet type, DO NOT generate content for that type
+3. Instead, focus on other activities like replying or browsing
+4. Current cooldown status is provided below - use this to guide your actions
+
 AVAILABLE COMMANDS:
 Timeline & Discovery:
 - get-homepage: Browse your timeline
@@ -54,6 +60,7 @@ Remember:
 - Replies have no cooldown and should be your primary form of engagement
 - Use quote tweets sparingly and only for truly interesting content
 - Focus on direct replies over quote tweets when possible
+- NEVER generate tweet content for a type that is in cooldown
 
 ## TWEETS COOLDOWN
 {{cooldown}}

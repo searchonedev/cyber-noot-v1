@@ -5,7 +5,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon --exec bun src/index.ts",
-    "start": "bun src/index.ts"
+    "start": "bun src/index.ts",
+    "build-ui": "tsc -p tsconfig.ui.json",
+    "start-ui": "npm run build-ui && electron dist/ui/main.js"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +18,8 @@
     "@fal-ai/client": "^1.2.1",
     "@supabase/supabase-js": "^2.46.1",
     "axios": "^1.7.8",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.4.7",
+    "electron": "^28.3.3",
     "file-type": "^19.6.0",
     "fs": "^0.0.1-security",
     "goat-x": "^1.2.0",
@@ -31,6 +34,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/electron": "^1.6.12",
     "@types/node": "^22.10.1",
     "@types/shell-quote": "^1.7.5",
     "ts-node": "^10.9.2",

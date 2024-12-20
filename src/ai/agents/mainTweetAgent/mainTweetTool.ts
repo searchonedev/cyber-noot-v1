@@ -14,7 +14,7 @@ export const MainTweetTool: Tool = {
   type: 'function',
   function: {
     "name": "main_tweet_tool",
-    "description": "Send a main tweet of what you feel like. You have the option to include media, which another agent will handle.",
+    "description": "Send a main tweet of what you feel like. You should include media 80% of the time, which another agent will handle.",
     "strict": true,
     "parameters": {
       "type": "object",
@@ -39,7 +39,7 @@ export const MainTweetTool: Tool = {
         },
         "media_included": {
           "type": "boolean",
-          "description": "Whether or not to include generated media in the tweet."
+          "description": "Whether or not to include generated media in the tweet. Should be true 80% of the time."
         }
       }
     }

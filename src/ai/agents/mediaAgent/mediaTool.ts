@@ -26,7 +26,7 @@ export const MediaTool: Tool = {
       "type": "object",
       "required": [
         "content_type",
-        "media_included"
+        "media_prompt"
       ],
       "properties": {
         "content_type": {

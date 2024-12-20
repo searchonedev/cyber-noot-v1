@@ -1,116 +1,136 @@
-import { client } from "./client";
+import { MemoryService, MemoryCategories, Memory, StructuredMemoryQuery } from './memoryService';
 import { Logger } from '../utils/logger';
-import { configLoader } from '../utils/config';
-
-// Get the agent name from config
-const AGENT_NAME = configLoader.getAgentName();
-
-// Helper function to format search results into bullet points
-export const formatMemoryResults = (results: any[]) => {
-    return results
-        .map(result => `• ${result.memory}`)
-        .join('\n');
-};
-
-// Define types for query function inputs and responses
-export type MemoryResponse = Promise<any>; // Replace 'any' with the actual response type from mem0ai if available
 
 /**
- * Base function to handle common memory search logic and error handling
- * @param category Memory category to search within
- * @param query The search query string
- * @param metadata Optional additional metadata for the search
+ * Search for memories in a specific category
+ * @param category The category to search in
+ * @param query The search query
+ * @returns Promise with search results
  */
-async function searchMemoryBase(
-    category: string,
-    query: string,
-): MemoryResponse {
+export async function searchMemories(category: string, query: string): Promise<Memory[]> {
     try {
-        Logger.log(`Executing search in category: ${category}`);
-        Logger.log(`Query: "${query}"`);
-
-        // Construct filters based on category and agent_id
-        const filters = {
-            AND: [
-                { user_id: category },
-                { agent_id: { in: [AGENT_NAME] } },
-            ]
+        const memoryService = MemoryService.getInstance();
+        
+        // Convert string query to structured format
+        const structuredQuery: StructuredMemoryQuery = {
+            primary_keywords: [query],
+            context_keywords: [],
+            time_relevance: 'all',
+            categories: [category]
         };
 
-        // Perform the search using the client.search method
-        const response = await client.search(query, {
-            filters: filters,
-            api_version: "v2",
-            limit: 10,
-        });
+        const response = await memoryService.searchMemories(structuredQuery);
 
-        Logger.log(`Search response from category: ${category}`, response);
-
-        // Format the search results
-        const formattedResults = formatMemoryResults(response);
-        Logger.log(`Formatted Results:\n${formattedResults}`);
+        // Format results for logging
+        const formattedResults = JSON.stringify(response, null, 2);
+        Logger.log(`Search Results for "${query}" in category "${category}":\n${formattedResults}`);
 
         return response;
     } catch (error) {
-        Logger.log(`Error searching memory in category "${category}" with query "${query}":`, error);
-        throw new Error(`Failed to search memory in category "${category}": ${error.message}`);
+        Logger.log(`Error searching memories for query "${query}":`, error);
+        throw error;
     }
 }
 
 /**
- * Search world knowledge in Noot's memory
- * @param query The search query string
+ * Search for world knowledge in memory
+ * @param query The search query
+ * @returns Promise with search results
  */
-export async function searchWorldKnowledge(query: string): MemoryResponse {
-    // Search within the 'world_knowledge' category
-    return searchMemoryBase("world_knowledge", query);
+export async function searchWorldKnowledge(query: string) {
+    return searchMemories(MemoryCategories.WORLD_KNOWLEDGE, query);
 }
 
 /**
- * Search crypto ecosystem knowledge in Noot's memory
- * @param query The search query string
+ * Search for crypto ecosystem knowledge in memory
+ * @param query The search query
+ * @returns Promise with search results
  */
-export async function searchCryptoKnowledge(query: string): MemoryResponse {
-    // Search within the 'crypto_ecosystem_knowledge' category
-    return searchMemoryBase("crypto_ecosystem_knowledge", query);
+export async function searchCryptoKnowledge(query: string) {
+    return searchMemories(MemoryCategories.CRYPTO_KNOWLEDGE, query);
 }
 
 /**
- * Search self-knowledge in agent's memory
- * @param query The search query string
+ * Search for self knowledge in memory
+ * @param query The search query
+ * @returns Promise with search results
  */
-export async function searchSelfKnowledge(query: string): MemoryResponse {
-    // Search within the '{agent_name}_self' category
-    return searchMemoryBase(`${AGENT_NAME}_self`, query);
+export async function searchSelfKnowledge(query: string) {
+    return searchMemories(MemoryCategories.SELF_KNOWLEDGE, query);
 }
 
 /**
- * Search user-specific knowledge in Noot's memory
- * @param query The search query string
- * @param userId Supabase user ID for the specific user
+ * Search for user-specific knowledge in memory
+ * @param query The search query
+ * @param userId The user ID to search memories for
+ * @returns Promise with search results
  */
-export async function searchUserSpecificKnowledge(
-    query: string,
-    userId: string
-): MemoryResponse {
-    // Use 'user_{id}' as the category to search within the specific user's memories
-    return searchMemoryBase(`user_${userId}`, query);
+export async function searchUserSpecificKnowledge(query: string, userId: string) {
+    try {
+        const memoryService = MemoryService.getInstance();
+        const category = `user_${userId}`;
+        
+        // Convert string query to structured format
+        const structuredQuery: StructuredMemoryQuery = {
+            primary_keywords: [query],
+            context_keywords: [],
+            time_relevance: 'all',
+            categories: [category]
+        };
+
+        const response = await memoryService.searchMemories(structuredQuery);
+
+        // Format results for logging
+        const formattedResults = JSON.stringify(response, null, 2);
+        Logger.log(`Search Results for "${query}" in user-specific category "${category}":\n${formattedResults}`);
+
+        return response;
+    } catch (error) {
+        Logger.log(`Error searching user-specific memories for query "${query}":`, error);
+        throw error;
+    }
 }
 
 /**
- * Search main tweets in Noot's memory
- * @param query The search query string
+ * Search for main tweets in memory
+ * @param query The search query
+ * @returns Promise with search results
  */
-export async function searchMainTweet(query: string): MemoryResponse {
-    // Search within the 'main_tweets' category
-    return searchMemoryBase("main_tweets", query);
+export async function searchMainTweet(query: string) {
+    return searchMemories(MemoryCategories.MAIN_TWEETS, query);
 }
 
 /**
- * Search image prompts in Noot's memory
- * @param query The search query string
+ * Search for image prompts in memory
+ * @param query The search query
+ * @returns Promise with search results
  */
-export async function searchImagePrompt(query: string): MemoryResponse {
-    // Search within the 'image_prompts' category
-    return searchMemoryBase("image_prompts", query);
+export async function searchImagePrompt(query: string) {
+    return searchMemories(MemoryCategories.IMAGE_PROMPTS, query);
+}
+
+/**
+ * Format memory results into a readable string with markdown headers
+ * @param memories Array of memory results to format
+ * @param category Optional category header to add
+ * @returns Formatted string with memory results
+ */
+export function formatMemoryResults(memories: Memory[], category?: string): string {
+    if (!memories || memories.length === 0) {
+        return '';
+    }
+
+    let formatted = category ? `\n## ${category}\n` : '\n';
+    
+    memories.forEach(memory => {
+        if (Array.isArray(memory.content)) {
+            memory.content.forEach((msg: { role: string; content: string }) => {
+                if (msg && typeof msg.content === 'string') {
+                    formatted += `- ${msg.content}\n`;
+                }
+            });
+        }
+    });
+
+    return formatted;
 }

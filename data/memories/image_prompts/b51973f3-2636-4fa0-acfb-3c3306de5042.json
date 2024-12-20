@@ -1,0 +1,18 @@
+{
+  "id": "b51973f3-2636-4fa0-acfb-3c3306de5042",
+  "content": [
+    {
+      "role": "assistant",
+      "content": "Generate an image of a Bitcoin logo."
+    }
+  ],
+  "metadata": {
+    "category": "image_prompts",
+    "timestamp": "2024-12-20T08:06:23.006Z"
+  },
+  "agent_id": "noot",
+  "user_id": "image_prompts",
+  "created_at": "2024-12-20T08:06:23.006Z",
+  "updated_at": "2024-12-20T08:06:23.006Z",
+  "infer": true
+}

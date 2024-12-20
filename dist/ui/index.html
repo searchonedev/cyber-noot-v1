@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Noot Terminal Monitor</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Consolas', monospace;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        #log-container {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-y: auto;
+            height: calc(100vh - 40px);
+        }
+
+        #memory-container {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-y: auto;
+            height: calc(100vh - 40px);
+        }
+
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .memory-entry {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #363636;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+
+        .memory-entry .timestamp {
+            color: #569cd6;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .memory-entry .content {
+            color: #9cdcfe;
+        }
+
+        .section-title {
+            font-size: 18px;
+            color: #569cd6;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #363636;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #565656;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #666666;
+        }
+
+        /* Log entry types */
+        .log-info { color: #9cdcfe; }
+        .log-success { color: #6a9955; }
+        .log-error { color: #f14c4c; }
+        .log-warning { color: #dcdcaa; }
+    </style>
+</head>
+<body>
+    <div id="log-container">
+        <div class="section-title">Terminal Log Stream</div>
+        <div id="log-content"></div>
+    </div>
+    <div id="memory-container">
+        <div class="section-title">Short-term Memory</div>
+        <div id="memory-content"></div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        // Log handling
+        const logContent = document.getElementById('log-content');
+        const memoryContent = document.getElementById('memory-content');
+
+        // Function to determine log entry type
+        function getLogType(message) {
+            if (message.includes('✅') || message.includes('success')) return 'log-success';
+            if (message.includes('❌') || message.includes('error')) return 'log-error';
+            if (message.includes('⚠️') || message.includes('warning')) return 'log-warning';
+            return 'log-info';
+        }
+
+        // Add new log entry
+        ipcRenderer.on('log-update', (event, message) => {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${getLogType(message)}`;
+            entry.textContent = message;
+            logContent.appendChild(entry);
+            entry.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        // Update memory display
+        async function updateMemory() {
+            try {
+                const memories = await ipcRenderer.invoke('get-short-term-memory');
+                memoryContent.innerHTML = '';
+                
+                memories.forEach(memory => {
+                    const entry = document.createElement('div');
+                    entry.className = 'memory-entry';
+                    
+                    const timestamp = document.createElement('div');
+                    timestamp.className = 'timestamp';
+                    timestamp.textContent = new Date(memory.created_at).toLocaleString();
+                    
+                    const content = document.createElement('div');
+                    content.className = 'content';
+                    content.textContent = memory.summary;
+                    
+                    entry.appendChild(timestamp);
+                    entry.appendChild(content);
+                    memoryContent.appendChild(entry);
+                });
+            } catch (error) {
+                console.error('Error updating memory:', error);
+            }
+        }
+
+        // Update memory every 5 seconds
+        setInterval(updateMemory, 5000);
+        updateMemory(); // Initial update
+    </script>
+</body>
+</html> 

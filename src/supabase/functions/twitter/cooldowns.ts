@@ -1,10 +1,17 @@
 import { supabase } from '../../../supabase/supabaseClient';
 import { Logger } from '../../../utils/logger';
+import { COOLDOWN_OVERRIDE } from '../../../cli';
 
-type TweetType = 'main' | 'quote' | 'retweet' | 'media';
+type TweetType = 'main' | 'quote' | 'retweet' | 'media' | 'reply';
 
 // Cooldown duration in minutes for each tweet type
-const COOLDOWN_DURATION = 60; // 1 hour cooldown for all tweet types
+const COOLDOWN_DURATIONS: { [key in TweetType]: number } = {
+  main: 30,    // 30 min cooldown (1-2 tweets per hour)
+  quote: 60,   // 1 hour cooldown
+  retweet: 60, // 1 hour cooldown
+  media: 60,   // 1 hour cooldown
+  reply: 0     // No cooldown for replies
+};
 
 /**
  * Parses a timestamp string from the database and returns a Date object in UTC.
@@ -59,6 +66,24 @@ async function getLastTweetDetails(tweetType: TweetType): Promise<TweetRecord | 
  * @returns True if cooldown is active, false otherwise.
  */
 export async function isCooldownActive(tweetType: TweetType): Promise<{ isActive: boolean; remainingTime: number | null }> {
+  // Check for cooldown override first
+  if (COOLDOWN_OVERRIDE === true) {
+    Logger.log(`Cooldown override is active - bypassing cooldown check for ${tweetType}`);
+    return {
+      isActive: false,
+      remainingTime: null
+    };
+  }
+
+  // No cooldown for replies
+  if (tweetType === 'reply') {
+    Logger.log('Replies have no cooldown restrictions');
+    return {
+      isActive: false,
+      remainingTime: null
+    };
+  }
+
   const lastTweetDetails = await getLastTweetDetails(tweetType);
 
   if (!lastTweetDetails) {
@@ -72,7 +97,7 @@ export async function isCooldownActive(tweetType: TweetType): Promise<{ isActive
   const lastTweetTime = lastTweetDetails.created_at;
   const currentTime = new Date();
   let timeSinceLastTweet = currentTime.getTime() - lastTweetTime.getTime();
-  const cooldownPeriod = COOLDOWN_DURATION * 60 * 1000;
+  const cooldownPeriod = COOLDOWN_DURATIONS[tweetType] * 60 * 1000;
 
   // Log detailed cooldown computation
   Logger.log(`Cooldown Check for tweet type: ${tweetType}`);
@@ -81,6 +106,7 @@ export async function isCooldownActive(tweetType: TweetType): Promise<{ isActive
   Logger.log(`Time Since Last Tweet (ms): ${timeSinceLastTweet}`);
   Logger.log(`Cooldown Period (ms): ${cooldownPeriod}`);
   Logger.log(`Last Tweet Text: ${lastTweetDetails.text}`);
+  Logger.log(`Cooldown Override Status: ${COOLDOWN_OVERRIDE}`);
 
   // Handle future lastTweetTime
   if (timeSinceLastTweet < 0) {
@@ -110,6 +136,10 @@ export async function isCooldownActive(tweetType: TweetType): Promise<{ isActive
  * @returns A formatted string indicating the cooldown status of each tweet type.
  */
 export async function getCooldownStatus(): Promise<string> {
+  if (COOLDOWN_OVERRIDE === true) {
+    return `Tweet Cooldown Status: COOLDOWNS ARE DISABLED VIA OVERRIDE FLAG`;
+  }
+
   const [mainCooldown, quoteCooldown, retweetCooldown, mediaCooldown] = await Promise.all([
     isCooldownActive('main'),
     isCooldownActive('quote'),
@@ -121,5 +151,6 @@ export async function getCooldownStatus(): Promise<string> {
   Main Tweet: ${mainCooldown.isActive ? `CANNOT SEND A MAIN TWEET. COOLDOWN IS ACTIVE (${mainCooldown.remainingTime} minutes remaining)` : 'CAN SEND A MAIN TWEET. COOLDOWN IS INACTIVE'}
   Quote Tweet: ${quoteCooldown.isActive ? `CANNOT SEND A QUOTE TWEET. COOLDOWN IS ACTIVE (${quoteCooldown.remainingTime} minutes remaining)` : 'CAN SEND A QUOTE TWEET. COOLDOWN IS INACTIVE'}
   Retweet: ${retweetCooldown.isActive ? `CANNOT RETWEET. COOLDOWN IS ACTIVE (${retweetCooldown.remainingTime} minutes remaining)` : 'CAN RETWEET. COOLDOWN IS INACTIVE'}
-  Media Tweet: ${mediaCooldown.isActive ? `CANNOT SEND A MEDIA TWEET. COOLDOWN IS ACTIVE (${mediaCooldown.remainingTime} minutes remaining)` : 'CAN SEND A MEDIA TWEET. COOLDOWN IS INACTIVE'}`;
+  Media Tweet: ${mediaCooldown.isActive ? `CANNOT SEND A MEDIA TWEET. COOLDOWN IS ACTIVE (${mediaCooldown.remainingTime} minutes remaining)` : 'CAN SEND A MEDIA TWEET. COOLDOWN IS INACTIVE'}
+  Replies: NO COOLDOWN - CAN ALWAYS REPLY`;
 }

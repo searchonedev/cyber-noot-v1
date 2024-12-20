@@ -1,0 +1,18 @@
+{
+  "id": "6fc3bba8-6e81-428c-a677-298aac316916",
+  "content": [
+    {
+      "role": "user",
+      "content": "Bitcoin is a decentralized digital currency."
+    }
+  ],
+  "metadata": {
+    "category": "world_knowledge",
+    "timestamp": "2024-12-20T08:22:01.821Z"
+  },
+  "agent_id": "noot",
+  "user_id": "world_knowledge",
+  "created_at": "2024-12-20T08:22:01.821Z",
+  "updated_at": "2024-12-20T08:22:01.821Z",
+  "infer": true
+}

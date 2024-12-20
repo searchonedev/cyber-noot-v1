@@ -20,6 +20,9 @@ import { supabase } from './supabase/supabaseClient';
 
 Logger.enable();
 
+// Global flag for cooldown override
+export let COOLDOWN_OVERRIDE = false;
+
 /**
  * Initializes the CLI application for manual use to test AI functions
  * - Ensures Twitter authentication
@@ -30,6 +33,13 @@ Logger.enable();
 
 async function initializeCLI() {
   try {
+    // Parse command line arguments
+    const args = process.argv.slice(2);
+    if (args.includes('--no-cooldown')) {
+      COOLDOWN_OVERRIDE = true;
+      console.log('⚠️ WARNING: Cooldowns are disabled! Use with caution.');
+    }
+
     const sessionId = uuidv4(); // Generate unique session ID for this CLI session
     
     // Ensure Twitter authentication before starting
@@ -41,7 +51,11 @@ async function initializeCLI() {
       output: process.stdout,
     });
 
-    console.log('\nWelcome to the Terminal. Use "help" to view available commands. Type commands below:');
+    console.log('\nWelcome to the Terminal. Use "help" to view available commands.');
+    if (COOLDOWN_OVERRIDE) {
+      console.log('Cooldowns are currently DISABLED. All tweet types can be used without waiting.');
+    }
+    console.log('Type commands below:');
 
     rl.on('line', async (input) => {
       const trimmedInput = input.trim();
@@ -75,7 +89,8 @@ async function initializeCLI() {
       };
       await storeTerminalMessage(terminalOutputMessage, sessionId);
 
-      console.log("TERMINAL OUTPUT: ", terminalOutput);
+      // Display just the command output
+      console.log(terminalOutput.output);
     });
 
     // Handle CLI shutdown

@@ -5,6 +5,17 @@ import { Logger } from '../../utils/logger';
 import { addMainTweet } from '../../memory/addMemories';
 
 /**
+ * Validates tweet text length based on Twitter Blue status
+ * @param text - The tweet text to validate
+ * @returns {boolean} True if valid, false if too long
+ */
+function validateTweetLength(text: string): boolean {
+  // Twitter Blue allows up to 25,000 characters
+  const TWITTER_BLUE_LIMIT = 25000;
+  return text.length <= TWITTER_BLUE_LIMIT;
+}
+
+/**
  * Sends a main tweet with optional media and logs it to the database.
  * @param text - The text content of the tweet
  * @param mediaUrls - Optional array of media URLs
@@ -15,6 +26,11 @@ export async function sendTweet(
   mediaUrls?: string[]
 ): Promise<string | null> {
   try {
+    // Validate tweet length first
+    if (!validateTweetLength(text)) {
+      throw new Error(`Tweet exceeds character limit (${text.length}/25,000 characters)`);
+    }
+
     Logger.log('Preparing to send tweet with text:', text);
     if (mediaUrls?.length) {
       Logger.log('Media URLs to process:', mediaUrls);

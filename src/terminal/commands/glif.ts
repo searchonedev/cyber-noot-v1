@@ -28,7 +28,7 @@ const glifCommand: Command = {
     } catch (error) {
       Logger.log("Command error:", error);
       return {
-        output: `Failed to generate image: ${error.message}`
+        output: `Failed to generate image: ${error instanceof Error ? error.message : 'Unknown error occurred'}`
       };
     }
   }

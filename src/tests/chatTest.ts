@@ -22,8 +22,10 @@ const models = [
   }
 ];
 
-// Run chat tests for each model
-async function runChatTests() {
+/**
+ * Run chat tests for each model
+ */
+export async function runChatTests() {
   console.log('\n🤖 Starting Chat Model Tests\n');
 
   for (const model of models) {

@@ -1,81 +1,88 @@
 import { Logger } from '../utils/logger';
-import { OpenAIClient } from '../ai/models/clients/OpenAiClient';
+import { AnthropicClient } from '../ai/models/clients/AnthropicClient';
 import { MemoryAgent } from '../ai/agents/memoryAgent/memoryAgent';
-import {
-    searchWorldKnowledge,
-    searchCryptoKnowledge,
-    searchSelfKnowledge,
-    searchUserSpecificKnowledge,
-    formatMemoryResults,
-    searchMainTweet
-} from '../memory/searchMemories';
-import { getUserIDsFromUsernames } from '../utils/getUserIDfromUsername';
+import { MemoryService, MemoryCategories, StructuredMemoryQuery } from '../memory/memoryService';
 import { getShortTermHistory } from '../supabase/functions/terminal/terminalHistory';
+import { formatMemoryResults } from '../memory/searchMemories';
 
 // Enable logging for detailed output
 Logger.enable();
 
 /**
- * Loads and formats memories from various knowledge bases based on input text
- * @param textContent - The main text content to generate memory queries from
- * @param usernames - Array of usernames to fetch specific memories for
- * @returns Formatted string containing all memory results with markdown headers
+ * Enhanced memory loading pipeline that uses structured queries for more precise memory retrieval
+ * @param context Current context from terminal logs or user interactions
+ * @param usernames Optional array of usernames to include in search
+ * @returns Formatted memory results
  */
-export async function loadMemories(textContent: string, usernames?: string[]): Promise<string> {
+export async function loadMemories(context: string, usernames?: string[]): Promise<string> {
     try {
-        const openAIClient = new OpenAIClient("gpt-4o");
-        const memoryAgent = new MemoryAgent(openAIClient);
+        // Initialize AI client and memory agent
+        const anthropicClient = new AnthropicClient("claude-3-5-sonnet-20241022");
+        const memoryAgent = new MemoryAgent(anthropicClient);
+        const memoryService = MemoryService.getInstance();
+
+        // Load context into memory agent
+        memoryAgent.loadChatHistory([{
+            role: 'user',
+            content: context + (usernames ? `\nRelevant users: ${usernames.join(', ')}` : '')
+        }]);
+
+        // Generate structured memory query
+        const agentResponse = await memoryAgent.run();
         
-        // Generate memory query from content
-        const memoryQuery = await memoryAgent.run("LOAD IN MEMORIES BASED ON THIS INPUT:" + textContent);
-        const query = memoryQuery.output.memory_query;
-        Logger.log("Generated memory query:", query);
-
-        // Initialize result string with formatted sections
-        let formattedMemories = '';
-
-        // Add World Knowledge section
-        const worldKnowledgeResults = await searchWorldKnowledge(query);
-        Logger.log("World Knowledge Results:", worldKnowledgeResults);
-        formattedMemories += `### WORLD KNOWLEDGE\n${formatMemoryResults(worldKnowledgeResults)}\n\n`;
-
-        // Add Crypto Knowledge section
-        const cryptoKnowledgeResults = await searchCryptoKnowledge(query);
-        Logger.log("Crypto Knowledge Results:", cryptoKnowledgeResults);
-        formattedMemories += `### CRYPTO KNOWLEDGE\n${formatMemoryResults(cryptoKnowledgeResults)}\n\n`;
-
-        // Add Self Knowledge section
-        const selfKnowledgeResults = await searchSelfKnowledge(query);
-        Logger.log("Self Knowledge Results:", selfKnowledgeResults);
-        formattedMemories += `### MY OPINIONS/FEELINGS\n${formatMemoryResults(selfKnowledgeResults)}\n\n`;
-
-        // Add Main Tweet Knowledge section
-        const mainTweetKnowledgeResults = await searchMainTweet(query);
-        Logger.log("Main Tweet Knowledge Results:", mainTweetKnowledgeResults);
-        formattedMemories += `### POTENTIALLY RELEVANT TWEETS I MADE\n${formatMemoryResults(mainTweetKnowledgeResults)}\n\n`;
-
-        // Proceed with user-specific memory search only if usernames are provided
-        if (usernames && usernames.length > 0) {
-            // Fetch user IDs based on provided usernames
-            const userIds = await getUserIDsFromUsernames(usernames);
-            
-            // Iterate over each username to retrieve and format their specific memories
-            for (const username of usernames) {
-                const userId = userIds[username];
-                if (userId) {
-                    const userSpecificResults = await searchUserSpecificKnowledge(query, userId);
-                    Logger.log(`User-Specific Knowledge Results for @${username}:`, userSpecificResults);
-                    formattedMemories += `### MEMORIES FOR @${username}\n${formatMemoryResults(userSpecificResults)}\n\n`;
-                } else {
-                    Logger.log(`User ID not found for username: ${username}`);
-                }
-            }
+        if (!agentResponse?.success) {
+            throw new Error('Failed to generate memory query');
         }
 
-        return formattedMemories.trim();
+        const query = agentResponse.output.memory_query;
+        Logger.log('Generated memory query:', JSON.stringify(query, null, 2));
 
+        // Add user-specific categories if usernames provided
+        if (usernames?.length) {
+            const userCategories = usernames.map(u => `user_${u}`);
+            query.categories = [...query.categories, ...userCategories] as string[];
+        }
+
+        // Search memories using structured query
+        const memories = await memoryService.searchMemories(query);
+        Logger.log(`Found ${memories.length} relevant memories`);
+
+        // Format results by category
+        const formattedResults = formatMemoryResults(memories);
+        Logger.log('Memory search completed');
+
+        return formattedResults;
     } catch (error) {
-        Logger.log("An error occurred during memory retrieval:", error);
-        throw error; // Re-throw to allow handling by caller
+        Logger.log('Error in loadMemories:', error);
+        return formatMemoryResults([]);
     }
+}
+
+// Test function
+export async function testMemoryLoading() {
+    try {
+        Logger.log('Starting memory loading test...');
+        
+        // Get recent history for test
+        const recentHistory = await getShortTermHistory(10);
+        const formattedHistory = recentHistory.map(entry => 
+            `[${entry.role.toUpperCase()}]: ${entry.content}`
+        ).join('\n');
+        
+        // Test memory loading
+        const results = await loadMemories(formattedHistory);
+        Logger.log('Test results:', results);
+        
+        return results;
+    } catch (error) {
+        Logger.log('Memory loading test failed:', error);
+        throw error;
+    }
+}
+
+// Run test if executed directly
+if (require.main === module) {
+    testMemoryLoading()
+        .then(() => process.exit(0))
+        .catch(() => process.exit(1));
 } 

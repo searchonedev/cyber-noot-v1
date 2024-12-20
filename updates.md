@@ -1,6 +1,54 @@
 # Updates Log
 
-## [2024-03-21] Error Handling Improvements
+## Version Control Summary [2024-12-20]
+
+### Major Changes
+1. Media Generation System
+   - Increased main tweet media frequency to 80% (from 50%)
+   - Reserved GIFs for replies only
+   - Main tweets now exclusively use GLIF-generated media
+
+2. Cooldown System
+   - Added `--no-cooldown` CLI flag
+   - Implemented cooldown override functionality
+   - Fixed cooldown check imports and paths
+
+3. GIF System
+   - Fixed GIF posting issues in replies
+   - Improved GIF search term handling
+   - Added size validation (max 5MB)
+   - Implemented Tenor V2 API with tinygif format
+
+4. Command System
+   - Fixed command parameter parsing
+   - Added flag support in command interface
+   - Updated command execution logic
+
+### Files Modified
+1. Main Tweet System:
+   - `src/ai/agents/mainTweetAgent/mainTweetAgentConfig.ts`
+   - `src/ai/agents/mainTweetAgent/mainTweetTool.ts`
+
+2. Cooldown System:
+   - `src/cli.ts`
+   - `src/supabase/functions/twitter/cooldowns.ts`
+
+3. GIF System:
+   - `src/terminal/commands/post-gif.ts`
+   - `src/twitter/utils/gifUtils.ts`
+
+4. Command System:
+   - `src/terminal/types/commands.ts`
+   - `src/terminal/executeCommand.ts`
+
+### Commit Messages
+1. feat: increase main tweet media generation to 80%
+2. feat: add cooldown override CLI flag
+3. fix: GIF posting and search improvements
+4. feat: enhance command parameter handling
+5. docs: update documentation with recent changes
+
+## [2024-12-20] Error Handling Improvements
 
 ### Changes Made
 - Enhanced error handling in `getMentions.ts` and `retweet.ts`
@@ -15,7 +63,7 @@
 - Standardized error response formats
 - Fixed command registration conflicts
 
-## [2024-03-21] Reduced Media Generation Frequency
+## [2024-12-20] Reduced Media Generation Frequency
 
 ### Changes Made
 - Updated `mediaAgentConfig.ts` to be more selective about media generation
@@ -31,7 +79,7 @@ To reduce the frequency of media generation by making the media agent more discr
 - Added clear guidelines for media generation decisions
 - Emphasized quality over quantity in media content
 
-## [2024-03-21] Enhanced GIF Handling and Reply Agent Improvements
+## [2024-12-20] Enhanced GIF Handling and Reply Agent Improvements
 
 ### GIF System Enhancements
 - Implemented size-aware GIF selection (max 5MB limit)
@@ -56,9 +104,56 @@ To reduce the frequency of media generation by making the media agent more discr
 - Implemented GIF search term enhancement function
 - Added error handling for oversized GIFs
 
+## [2024-12-20] Increased Media Generation Frequency & Cooldown System
+
+### Media Generation Updates
+- Modified `mainTweetAgentConfig.ts` to increase media generation frequency to 80%
+- Updated media guidelines in the system prompt
+- Enhanced media inclusion criteria with specific use cases:
+  - Market event reactions
+  - Community celebrations
+  - Fun moments
+  - Visual concepts
+  - Any message enhanced by imagery
+
+### MainTweetTool Enhancements
+- Updated `mainTweetTool.ts` description to emphasize 80% media inclusion rate
+- Modified `media_included` parameter description to guide the model
+- Added clearer documentation for media generation decisions
+
+### Cooldown System Improvements
+- Added command-line argument `--no-cooldown` to bypass cooldown checks
+- Modified `cli.ts` to handle cooldown override flag
+- Updated `cooldowns.ts` to respect the override setting
+- Enhanced cooldown status reporting and logging
+
+### Technical Details
+```typescript
+// Example cooldown override usage
+bun src/cli.ts --no-cooldown
+
+// Updated media inclusion logic
+MEDIA_GUIDELINES = {
+  inclusion_rate: "80%",
+  use_cases: [
+    "market_reactions",
+    "community_events",
+    "fun_moments",
+    "visual_concepts",
+    "enhanced_messages"
+  ]
+}
+```
+
+### Implementation Notes
+- Media generation is now more frequent but still context-aware
+- Cooldown system is more flexible with manual override option
+- System maintains logging and error handling for both features
+- Changes are backward compatible with existing functionality
+
 ## Recent Updates
 
-### System Backup (2024-02-17)
+### System Backup (2024-12-17)
 
 1. Created local backup of the codebase:
    - Location: `../backups/cypher-swarm-backup-20241217_013736/`
@@ -71,7 +166,7 @@ To reduce the frequency of media generation by making the media agent more discr
    - Changes: AgentConfig interface enhancement, documentation updates
    - Status: Successfully committed to main branch
 
-### AgentConfig Interface Enhancement (2024-02-17)
+### AgentConfig Interface Enhancement (2024-12-17)
 
 1. Updated the `AgentConfig` interface in `src/ai/types/agentSystem.ts` to better support async operations:
    - Made `dynamicVariables` optional with `?` modifier
@@ -101,7 +196,7 @@ export const agentConfig: AgentConfig = {
    - New implementations can choose either approach
    - Async operations are now properly typed
 
-## Analytics Insights (2024-02-17)
+## Analytics Insights (2024-12-17)
 
 ### Audience Analysis
 - Demographics: 25-44 age range (73.7%), 90.8% male
@@ -146,7 +241,7 @@ CONTENT_FOCUS = {
 - Heavy emphasis on GIFs and visual content
 - Global engagement approach while respecting peak hours
 
-## Context-Aware Response System (2024-02-17)
+## Context-Aware Response System (2024-12-17)
 
 ### Tweet Context Analysis
 ```typescript

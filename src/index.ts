@@ -18,6 +18,8 @@ import {
 } from './supabase/functions/terminal/terminalHistory';
 import { extractAndSaveLearnings } from './pipelines/extractLearnings';
 import { getCurrentTimestamp } from './utils/formatTimestamps';
+import { initializeMemory } from './memory/initializeMemory';
+import { getCooldownStatus } from './supabase/functions/twitter/cooldowns';
 
 Logger.enable();
 
@@ -48,6 +50,12 @@ function getModelClient(modelType: ModelType) {
 export async function startAISystem() {
   try {
     const sessionId = uuidv4();
+    
+    // Initialize memory system
+    Logger.log('Initializing memory system...');
+    await initializeMemory();
+    Logger.log('Memory system initialized successfully');
+    
     await ensureAuthenticated();
     
     // Get model type from environment variable or use default
@@ -87,6 +95,10 @@ export async function startAISystem() {
           if (terminalAgent.getLastAgentMessage()) {
             terminalAgent.addUserMessage('Please proceed with your next action.');
           }
+
+          // Update cooldown status before running the agent
+          const cooldownStatus = await getCooldownStatus();
+          terminalAgent.addUserMessage(`Current Cooldown Status:\n${cooldownStatus}`);
 
           // Run the agent
           const functionResult = await terminalAgent.run();

@@ -1,0 +1,18 @@
+{
+  "id": "add99c4b-7a39-47ae-92d0-cc0bcd7d7e7b",
+  "content": [
+    {
+      "role": "system",
+      "content": "Memory system initialization test"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2024-12-20T13:32:40.624Z",
+    "category": "system"
+  },
+  "agent_id": "noot",
+  "user_id": "system",
+  "created_at": "2024-12-20T13:32:40.624Z",
+  "updated_at": "2024-12-20T13:32:40.624Z",
+  "infer": true
+}

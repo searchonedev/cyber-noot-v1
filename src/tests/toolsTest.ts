@@ -75,8 +75,10 @@ class TestAgent extends BaseAgent<typeof testToolSchema> {
   }
 }
 
-// Main test function
-async function runModelTests() {
+/**
+ * Main test function for model functionality
+ */
+export async function runModelTests() {
   console.log('\n🧪 Starting Model Tests\n');
 
   // Test configurations

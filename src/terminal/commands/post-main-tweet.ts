@@ -14,7 +14,7 @@ export const twitterTweet: Command = {
     const { generateAndPostMainTweet } = await import('../../pipelines/generateMainTweet');
 
     // Check for main tweet cooldown
-    const cooldownInfo = await isCooldownActive('media');
+    const cooldownInfo = await isCooldownActive('main');
 
     if (cooldownInfo.isActive) {
       return {
@@ -36,11 +36,12 @@ export const twitterTweet: Command = {
                `Media: ${result.mediaUrls ? result.mediaUrls.join(', ') : 'None'}\n` +
                `Details: ${result.message}`
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       return {
         output: `❌ Action: Post Main Tweet\n` +
                `Status: Error\n` +
-               `Details: ${error.message}`
+               `Details: ${errorMessage}`
       };
     }
   }

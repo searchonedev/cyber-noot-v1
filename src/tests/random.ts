@@ -3,7 +3,10 @@ import { Logger } from '../utils/logger';
 
 Logger.enable();
 
-async function testSummaries() {
+/**
+ * Test function for memory summaries
+ */
+export async function testSummaries() {
   try {
     // First, let's check what raw memories we have
     const rawMemories = await MemorySummaries.getActiveMemories();

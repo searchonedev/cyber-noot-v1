@@ -1,75 +1,74 @@
 // Command registry for terminal commands
 
-import fs from 'fs';
-import path from 'path';
 import { Command } from './types/commands';
+import { Logger } from '../utils/logger';
+import { commands } from './commands';
+
+// Command registry to store all available commands
+const commandRegistry = new Map<string, Command>();
 
 /**
- * Registry mapping command names to their command objects.
+ * Loads all available commands into the registry
  */
-const commandRegistry: Map<string, Command> = new Map();
+export function loadCommands() {
+  // Clear existing commands
+  commandRegistry.clear();
 
-/**
- * Loads command modules dynamically using ES modules import
- */
-export async function loadCommands() {
-  const commandsPath = path.join(__dirname, 'commands');
-  const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.ts'));
-
-  for (const file of commandFiles) {
-    try {
-      const filePath = path.join(commandsPath, file);
-      // Use dynamic import instead of require
-      const commandModule = await import(filePath);
-      
-      // Assume each module exports a single command
-      const command = Object.values(commandModule)[0] as Command;
-
-      if (command && command.name) {
-        commandRegistry.set(command.name, command);
-      } else {
-        console.warn(`Invalid command module: ${file}`);
-      }
-    } catch (error) {
-      console.error(`Error loading command from ${file}:`, error);
+  // Load commands from the commands object
+  Object.entries(commands).forEach(([name, command]) => {
+    if (command && typeof command === 'object' && 'handler' in command) {
+      // Use the name from the commands object
+      commandRegistry.set(name, command);
     }
-  }
-}
-
-export function getCommand(commandName: string): Command | undefined {
-  return commandRegistry.get(commandName);
-}
-
-export function getAllCommands(): Command[] {
-  return Array.from(commandRegistry.values());
-}
-
-// Export function to generate help text that can be used in config
-export function generateHelpText(): string {
-  const commands = getAllCommands();
-  const helpText: string[] = ['Available commands:'];
-
-  const formatCommand = (cmd: Command) => {
-    let cmdStr = cmd.name;
-    
-    if (cmd.parameters?.length) {
-      cmdStr += ' ' + cmd.parameters
-        .map(p => `<${p.name}>`)
-        .join(' ');
-    }
-    
-    const paddedCmd = cmdStr.padEnd(25, ' ');
-    return `${paddedCmd} - ${cmd.description}`;
-  };
-
-  commands.forEach(cmd => {
-    helpText.push(formatCommand(cmd));
   });
 
-  return helpText.join('\n');
+  Logger.log('Loaded commands:', Array.from(commandRegistry.keys()));
 }
 
-// Initialize commands asynchronously
-loadCommands().catch(error => {
-  console.error('Failed to load commands:', error);
-});
+/**
+ * Gets a command by name from the registry
+ */
+export function getCommand(name: string): Command | undefined {
+  return commandRegistry.get(name);
+}
+
+/**
+ * Gets all registered commands
+ */
+export function getAllCommands(): Map<string, Command> {
+  return commandRegistry;
+}
+
+/**
+ * Generates help text for all available commands
+ */
+export function generateHelpText(): string {
+  const commandList = Array.from(commandRegistry.entries())
+    .sort(([a], [b]) => a.localeCompare(b));
+
+  let helpText = 'Available Commands:\n\n';
+
+  const maxNameLength = Math.max(...commandList.map(([name]) => name.length));
+
+  commandList.forEach(([name, command]) => {
+    // Format command name and description in a clean, aligned way
+    const paddedName = name.padEnd(maxNameLength + 2);
+    helpText += `${paddedName}${command.description}\n`;
+
+    // Add parameter details if any exist
+    if (command.parameters && command.parameters.length > 0) {
+      command.parameters.forEach(param => {
+        const flagInfo = param.flag ? ` (-${param.flag})` : '';
+        const requiredInfo = param.required ? ' (required)' : '';
+        const defaultInfo = param.defaultValue ? ` (default: ${param.defaultValue})` : '';
+        helpText += `  ${param.name}${flagInfo}${requiredInfo}${defaultInfo}: ${param.description}\n`;
+      });
+    }
+    helpText += '\n';
+  });
+
+  return helpText;
+}
+
+// Initialize commands on module load
+loadCommands();

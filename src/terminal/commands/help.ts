@@ -9,10 +9,12 @@ import { generateHelpText } from '../commandRegistry';
  */
 export const help: Command = {
   name: 'help',
-  description: 'Displays available commands and usage information',
+  description: 'Shows available commands and their usage',
+  parameters: [],
   handler: async () => {
-    return { 
-      output: generateHelpText()
+    const helpText = generateHelpText();
+    return {
+      output: helpText
     };
-  },
+  }
 };

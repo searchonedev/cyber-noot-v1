@@ -20,14 +20,19 @@ export interface CommandParameter {
     required: boolean;
   
     /**
-     * The default value of the parameter (if any).
-     */
-    defaultValue?: string;
-  
-    /**
      * The expected type of the parameter.
      */
-    type?: 'string' | 'number' | 'boolean';
+    type: string;
+  
+    /**
+     * Optional flag for command-line argument (e.g., 't' for -t)
+     */
+    flag?: string;
+  
+    /**
+     * The default value of the parameter (if any).
+     */
+    defaultValue?: any;
   }
   
   /**
@@ -47,22 +52,19 @@ export interface CommandParameter {
     /**
      * The parameters that the command accepts.
      */
-    parameters?: CommandParameter[];
+    parameters: CommandParameter[];
   
     /**
      * The function that handles the command execution.
      */
-    handler: CommandHandler;
+    handler: (args: any) => Promise<{
+      /**
+       * The output of the command execution.
+       */
+      output: string;
+      /**
+       * Indicates success of the command execution.
+       */
+      success?: boolean;
+    }>;
   }
-  
-  /**
-   * Defines the command handler function type.
-   */
-  export type CommandHandler = (
-    args: { [key: string]: any }
-  ) => Promise<{
-    /**
-     * The output of the command execution.
-     */
-    output: string;
-  }>;
