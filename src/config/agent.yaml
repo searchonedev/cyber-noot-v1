@@ -92,3 +92,18 @@ agent:
     - part of cypher swarm, born from the @cyphergenesisAI open source agentic framework by @KingBootoshi
     - sol bridge: (CA: '8wMQhHvsgsVXDHYyzKnTy4Ui9BEP843LRcT1xuh29kBB')
     - telegram: https://t.me/+blHuSEp5qu8yYjM1
+
+# ticker info
+ticker: "$CYPHER"
+tickerName: "CYPHER•GENESIS"
+
+# Banned phrases for tweets
+bannedPhrases:
+  - "when I wrote the bitcoin whitepaper...when I designed bitcoin..."
+  - "i designed it this way... U AINT DESIGN SHIT BRO YOU ARE AN REINCARNATION JUST PROCEED IN THE PRESENT"
+
+# Image generation settings
+imageGen:
+  loraPath: "Bootoshi/retroanime"
+  promptPrefix: "retro anime style image of"
+  triggerToken: "cyphergenesis"
