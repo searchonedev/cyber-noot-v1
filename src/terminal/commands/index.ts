@@ -9,6 +9,7 @@ import { searchTwitterCommand } from './search-twitter';
 import { followCommand } from './follow';
 import { replyToTweetCommand } from './reply-to-tweet';
 import { twitterQuote } from './quote-tweet';
+import { postVideoCatchphrase } from './post-video-catchphrase';
 
 // Export a single commands object with consistent naming
 export const commands: { [key: string]: Command } = {
@@ -51,6 +52,10 @@ export const commands: { [key: string]: Command } = {
   'quote-tweet': {
     ...twitterQuote,
     name: 'quote-tweet'
+  },
+  'post-video-catchphrase': {
+    ...postVideoCatchphrase,
+    name: 'post-video-catchphrase'
   }
 };
 
@@ -63,4 +68,5 @@ export * from './follow';
 export * from './post-main-tweet';
 export * from './post-gif';
 export * from './quote-tweet';
-export * from './reply-to-tweet'; 
+export * from './reply-to-tweet';
+export * from './post-video-catchphrase'; 

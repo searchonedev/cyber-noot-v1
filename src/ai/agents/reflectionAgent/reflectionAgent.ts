@@ -26,7 +26,48 @@ export class ReflectionAgent extends BaseAgent<typeof reflectionToolSchema> {
     critique: string;
     suggestions: string;
     improved_version?: string;
+    banned_words_check: {
+      has_banned_words: boolean;
+      found_banned_words: string[];
+      suggestions: string;
+    };
+    formatting_check: {
+      is_lowercase: boolean;
+      has_proper_breaks: boolean;
+      formatting_issues: string[];
+    };
+    content_check: {
+      is_natural: boolean;
+      maintains_personality: boolean;
+      content_issues: string[];
+    };
   }> {
+    // Handle missing tweet text
+    if (!tweetText || tweetText.trim() === '') {
+      return {
+        should_post: false,
+        quality_score: 1, // Minimum required score
+        relevance_score: 1, // Minimum required score
+        critique: 'No tweet text provided for analysis',
+        suggestions: 'Please provide the tweet text to analyze',
+        banned_words_check: {
+          has_banned_words: false,
+          found_banned_words: [],
+          suggestions: 'No tweet text to check for banned words'
+        },
+        formatting_check: {
+          is_lowercase: false,
+          has_proper_breaks: false,
+          formatting_issues: ['No tweet text to analyze formatting']
+        },
+        content_check: {
+          is_natural: false,
+          maintains_personality: false,
+          content_issues: ['No tweet content provided for analysis']
+        }
+      };
+    }
+
     const prompt = `
 ANALYZE THIS TWEET BEFORE POSTING:
 
@@ -39,17 +80,29 @@ ${context}
 Your task is to analyze this tweet and determine if it meets our quality standards.
 DO NOT treat this analysis as a tweet to post - you are evaluating the tweet text shown above.
 
-Consider:
-1. Is it relevant and timely?
-2. Does it add value to the conversation?
-3. Is it consistent with our personality?
-4. Is it engaging and well-written?
-5. Is it properly formatted in lowercase? (This is required for noot's style)
-6. Does it need improvements?
+ANALYSIS STEPS:
 
-If the tweet contains any capital letters, it should be rejected or improved with a lowercase version.
+1. BANNED WORDS CHECK
+   - Look for any banned words or phrases (wagmi, slurs, hate speech, etc.)
+   - Check for explicit financial advice or price promises
+   - Suggest alternatives if banned words are found
 
-Provide a thorough analysis and decide if this tweet should be posted.
+2. FORMATTING CHECK
+   - Verify all text is lowercase
+   - Check line break usage
+   - Identify any formatting issues
+
+3. CONTENT QUALITY
+   - Assess natural language and conversational tone
+   - Verify personality consistency
+   - Evaluate engagement potential
+   - Check relevance and timeliness
+
+4. FINAL VALIDATION
+   - Consider all checks together
+   - Decide if tweet should be posted
+   - Provide improved version if needed
+
 Remember: Your analysis is internal only - it will not be posted as a tweet.`;
 
     const response = await this.run(prompt);
@@ -67,6 +120,9 @@ Remember: Your analysis is internal only - it will not be posted as a tweet.`;
       critique: response.output.critique,
       suggestions: response.output.suggestions,
       improved_version: response.output.improved_version,
+      banned_words_check: response.output.banned_words_check,
+      formatting_check: response.output.formatting_check,
+      content_check: response.output.content_check,
     };
   }
 } 

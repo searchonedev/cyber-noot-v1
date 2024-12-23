@@ -1,0 +1,18 @@
+{
+  "id": "cf577deb-8a12-465d-ba7d-440c43038170",
+  "content": [
+    {
+      "role": "system",
+      "content": "Memory system initialization test"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2024-12-22T00:36:57.800Z",
+    "category": "system"
+  },
+  "agent_id": "noot",
+  "user_id": "system",
+  "created_at": "2024-12-22T00:36:57.800Z",
+  "updated_at": "2024-12-22T00:36:57.800Z",
+  "infer": true
+}

@@ -10,6 +10,7 @@ import { generateImageToVideo } from './mediaGeneration/combinedGeneration';
 import { Logger } from '../utils/logger';
 import { MainTweetResult } from './types';
 import { isCooldownActive } from '../supabase/functions/twitter/cooldowns';
+import { generateVideo } from './mediaGeneration/videoGen';
 
 // List of banned words that should not appear in tweets
 const BANNED_WORDS = [
@@ -201,9 +202,18 @@ ${tweetText}`;
         mediaUrls = [mediaResponse.url];
         Logger.log(`Generated Image URL (using ${mediaResponse.provider}):`, mediaResponse.url);
       } else if (contentType === 'video') {
-        const mediaUrl = await generateImageToVideo(generatedMediaPrompt);
-        mediaUrls = [mediaUrl];
-        Logger.log("Generated Video URL:", mediaUrl);
+        try {
+          // Use our video library instead of generating videos
+          const videoPath = await generateVideo(generatedMediaPrompt);
+          mediaUrls = [videoPath];
+          Logger.log("Selected Video from library:", videoPath);
+        } catch (error) {
+          Logger.log("Failed to select video, falling back to image generation:", error);
+          // Fallback to image generation if video selection fails
+          const mediaResponse = await generateImage(generatedMediaPrompt);
+          mediaUrls = [mediaResponse.url];
+          Logger.log(`Fallback: Generated Image URL (using ${mediaResponse.provider}):`, mediaResponse.url);
+        }
       }
     }
 

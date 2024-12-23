@@ -2,6 +2,8 @@ import fetch from 'node-fetch';
 import { URL } from 'url';
 import { fileTypeFromBuffer } from 'file-type';
 import { Logger } from '../../utils/logger';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Determines the media type based on URL or file extension
@@ -10,8 +12,8 @@ import { Logger } from '../../utils/logger';
  */
 export function getMediaType(url: string): string {
   try {
-    // First try to get content type from URL extension
-    const ext = new URL(url).pathname.split('.').pop()?.toLowerCase();
+    // First try to get content type from file extension
+    const ext = path.extname(url).toLowerCase().slice(1);
     
     // Map common extensions to proper MIME types
     const mimeTypes: Record<string, string> = {
@@ -38,14 +40,63 @@ export function getMediaType(url: string): string {
 }
 
 /**
- * Fetches media content from URL and prepares it for tweet attachment
- * @param url - URL of the media file
+ * Normalizes a file path to use forward slashes and handle Windows paths
+ * @param filePath - The file path to normalize
+ * @returns Normalized file path
+ */
+function normalizePath(filePath: string): string {
+  // Convert Windows backslashes to forward slashes
+  return filePath.replace(/\\/g, '/');
+}
+
+/**
+ * Reads a local file and returns its buffer and media type
+ * @param filePath - Path to the local file
  * @returns Promise resolving to media data object
  */
-async function fetchMediaFromUrl(url: string): Promise<{ data: Buffer; mediaType: string }> {
+async function readLocalFile(filePath: string): Promise<{ data: Buffer; mediaType: string }> {
   try {
-    Logger.log('Fetching media from URL:', url);
+    const normalizedPath = normalizePath(filePath);
+    Logger.log('Reading local file:', normalizedPath);
     
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`File does not exist: ${normalizedPath}`);
+    }
+    
+    // Read file into buffer
+    const buffer = await fs.promises.readFile(filePath);
+    Logger.log('Successfully read file, size:', buffer.length);
+    
+    // Get media type from file extension
+    const mediaType = getMediaType(filePath);
+    Logger.log('Detected media type:', mediaType);
+    
+    return {
+      data: buffer,
+      mediaType
+    };
+  } catch (error) {
+    Logger.log(`Error reading local file ${filePath}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Fetches media content from URL and prepares it for tweet attachment
+ * @param url - URL or local path of the media file
+ * @returns Promise resolving to media data object
+ */
+export async function fetchMediaFromUrl(url: string): Promise<{ data: Buffer; mediaType: string }> {
+  try {
+    Logger.log('Processing media from:', url);
+    
+    // Check if this is a local file path (Windows or Unix style)
+    if (url.match(/^[A-Za-z]:\//i) || url.startsWith('/') || url.startsWith('./') || url.startsWith('../')) {
+      return await readLocalFile(url);
+    }
+    
+    // Handle remote URLs
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -62,7 +113,7 @@ async function fetchMediaFromUrl(url: string): Promise<{ data: Buffer; mediaType
     // If content-type is missing or generic, detect it from buffer
     if (!contentType || contentType === 'application/octet-stream') {
       const fileTypeResult = await fileTypeFromBuffer(buffer);
-      contentType = fileTypeResult ? fileTypeResult.mime : 'image/jpeg'; // Default to JPEG for GLIF/FAL
+      contentType = fileTypeResult ? fileTypeResult.mime : 'image/jpeg';
       Logger.log('Detected content type:', contentType);
     }
     
@@ -71,7 +122,7 @@ async function fetchMediaFromUrl(url: string): Promise<{ data: Buffer; mediaType
       mediaType: contentType
     };
   } catch (error) {
-    Logger.log(`Error fetching media from URL ${url}:`, error);
+    Logger.log(`Error processing media from ${url}:`, error);
     throw error;
   }
 }

@@ -16,13 +16,18 @@ interface Config {
 
 class ConfigLoader {
   private static instance: ConfigLoader;
-  private config: Config;
+  private config!: Config;
+  private configPath: string;
 
   private constructor() {
+    this.configPath = path.join(__dirname, '..', 'config', 'agent.yaml');
+    this.loadConfig();
+  }
+
+  private loadConfig() {
     try {
       // Load the YAML file
-      const configPath = path.join(__dirname, '..', 'config', 'agent.yaml');
-      const fileContents = fs.readFileSync(configPath, 'utf8');
+      const fileContents = fs.readFileSync(this.configPath, 'utf8');
       this.config = yaml.load(fileContents) as Config;
       Logger.log('Configuration loaded successfully');
     } catch (error) {
@@ -38,6 +43,13 @@ class ConfigLoader {
     return ConfigLoader.instance;
   }
 
+  // Force a reload of the configuration
+  public reloadConfig(): void {
+    Logger.log('Reloading configuration...');
+    this.loadConfig();
+    Logger.log('Configuration reloaded successfully');
+  }
+
   public getAgentConfig(): AgentConfig {
     return this.config.agent;
   }
@@ -47,6 +59,8 @@ class ConfigLoader {
   }
 
   public getRawPersonality(): string {
+    // Always reload config before getting personality to ensure fresh data
+    this.reloadConfig();
     return this.config.agent.raw_personality.trim();
   }
 }

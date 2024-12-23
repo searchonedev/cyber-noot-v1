@@ -5,6 +5,7 @@ import { generateSystemPrompt } from '../corePersonality';
 import { activeSummaries } from '../../../utils/dynamicVariables';
 import { recentMainTweets } from '../../../utils/dynamicVariables';
 import { getCurrentTimestamp } from '../../../utils/formatTimestamps';
+import { configLoader } from '../../../utils/config';
 
 // Configuration for main tweet agent
 export const mainTweetAgentConfig: AgentConfig = {
@@ -62,7 +63,11 @@ You are the main tweet agent designed to write tweets embodying the personality 
 Use your main_tweet_tool to write a tweet.
 `,
   dynamicVariables: {
-    corePersonalityPrompt: generateSystemPrompt(),
+    corePersonalityPrompt: () => {
+      // Force a config reload before getting the personality
+      configLoader.reloadConfig();
+      return generateSystemPrompt();
+    },
     current_timestamp: getCurrentTimestamp(),
     currentSummaries: activeSummaries,
     terminalLog: "TERMINAL LOG DYNAMIC VARIABLE HERE",

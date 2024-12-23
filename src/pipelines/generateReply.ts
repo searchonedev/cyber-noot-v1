@@ -55,10 +55,11 @@ export async function generateAndPostReply(
     // If textOrPrompt starts with "!", treat it as a prompt, otherwise use it as direct text
     const isPrompt = textOrPrompt.startsWith("!");
     let replyText: string;
+    let replyResponse;
     
     if (isPrompt) {
       // Generate AI reply using prompt
-      const replyResponse = await generateTweetReply(tweetId, textOrPrompt.substring(1), textContent, imageContents, usernames);
+      replyResponse = await generateTweetReply(tweetId, textOrPrompt.substring(1), textContent, imageContents, usernames);
       replyText = replyResponse.reply_tweet;
     } else {
       // Use direct text input
@@ -82,7 +83,40 @@ Usernames mentioned: ${usernames?.join(', ') || 'none'}`;
     const reflection = await reflectionAgent.analyzeTweet(replyText, reflectionContext);
     Logger.log('Reply reflection:', JSON.stringify(reflection, null, 2));
 
-    // If reflection suggests not to post, try to use improved version or throw error
+    // Check for banned words first
+    if (reflection.banned_words_check.has_banned_words) {
+      Logger.log('Found banned words:', reflection.banned_words_check.found_banned_words);
+      if (reflection.improved_version) {
+        Logger.log('Using improved version without banned words');
+        replyText = reflection.improved_version;
+      } else {
+        throw new Error(`Reply contains banned words: ${reflection.banned_words_check.found_banned_words.join(', ')}`);
+      }
+    }
+
+    // Check formatting
+    if (!reflection.formatting_check.is_lowercase || !reflection.formatting_check.has_proper_breaks) {
+      Logger.log('Formatting issues found:', reflection.formatting_check.formatting_issues);
+      if (reflection.improved_version) {
+        Logger.log('Using improved version with correct formatting');
+        replyText = reflection.improved_version;
+      } else {
+        throw new Error(`Reply has formatting issues: ${reflection.formatting_check.formatting_issues.join(', ')}`);
+      }
+    }
+
+    // Check content quality
+    if (!reflection.content_check.is_natural || !reflection.content_check.maintains_personality) {
+      Logger.log('Content issues found:', reflection.content_check.content_issues);
+      if (reflection.improved_version) {
+        Logger.log('Using improved version with better content');
+        replyText = reflection.improved_version;
+      } else {
+        throw new Error(`Reply has content issues: ${reflection.content_check.content_issues.join(', ')}`);
+      }
+    }
+
+    // Final check if we should post
     if (!reflection.should_post) {
       if (reflection.improved_version) {
         Logger.log('Using improved version suggested by reflection');
@@ -92,14 +126,39 @@ Usernames mentioned: ${usernames?.join(', ') || 'none'}`;
       }
     }
 
-    // Handle media (GIF) if specified - only for AI-generated replies
+    // Handle media (GIF) if specified
     let mediaUrls: string[] | undefined;
-    if (isPrompt) {
-      const replyResponse = await generateTweetReply(tweetId, textOrPrompt.substring(1), textContent, imageContents, usernames);
-      if (replyResponse.media_type === 'gif' && replyResponse.gif_search_term) {
-        const gifUrl = await searchTenorGif(replyResponse.gif_search_term);
-        if (gifUrl) {
-          mediaUrls = [gifUrl];
+    if (replyResponse && replyResponse.media_type === 'gif') {
+      Logger.log('Attempting to find GIF with search term:', replyResponse.gif_search_term || 'nootnootmfers happy');
+      
+      // Use provided search term or default to a fun one
+      let searchTerm = (replyResponse.gif_search_term || 'nootnootmfers happy').toLowerCase();
+      if (!searchTerm.startsWith('nootnootmfers')) {
+        searchTerm = 'nootnootmfers ' + searchTerm;
+        Logger.log('Fixed search term to maintain brand consistency:', searchTerm);
+      }
+      
+      const gifUrl = await searchTenorGif(searchTerm);
+      if (gifUrl) {
+        Logger.log('Successfully found GIF:', gifUrl);
+        mediaUrls = [gifUrl];
+      } else {
+        Logger.log('No suitable GIF found for search term:', searchTerm);
+        // Try a few fallback terms
+        const fallbackTerms = [
+          'nootnootmfers fun',
+          'nootnootmfers excited',
+          'nootnootmfers happy'
+        ];
+        
+        for (const term of fallbackTerms) {
+          Logger.log('Trying fallback search term:', term);
+          const fallbackGifUrl = await searchTenorGif(term);
+          if (fallbackGifUrl) {
+            Logger.log('Found GIF using fallback term:', term);
+            mediaUrls = [fallbackGifUrl];
+            break;
+          }
         }
       }
     }
@@ -154,9 +213,15 @@ async function generateTweetReply(
   if (!textContent || !imageContents) {
     // Assemble Twitter interface if not provided
     const interfaceData = await assembleTwitterInterface(tweetId);
-    textContent = interfaceData.textContent;
+    textContent = interfaceData.textContent || 'No text content available';
     imageContents = interfaceData.imageContents;
     usernames = interfaceData.usernames;
+  }
+
+  // Ensure textContent is not undefined
+  if (!textContent) {
+    Logger.log('No text content available for tweet:', tweetId);
+    textContent = 'No text content available';
   }
 
   // Load memories with empty array fallback for undefined usernames
@@ -185,7 +250,7 @@ async function generateTweetReply(
   }
 
   // Generate reply using the agent
-  const response = await replyAgent.run(`GENERATE A REPLY FOR THE FOLLOWING TWEET:\n\n${textContent}`, runtimeVariables);
+  const response = await replyAgent.run(`GENERATE A REPLY FOR THE FOLLOWING TWEET:\n\n${textContent}\n\nPROMPT: ${prompt}`, runtimeVariables);
   
   return {
     reply_tweet: response.output.reply_tweet,
