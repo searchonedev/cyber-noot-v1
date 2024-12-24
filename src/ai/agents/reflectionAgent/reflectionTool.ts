@@ -1,138 +1,95 @@
 import { z } from 'zod';
 import { Tool } from '../../types/agentSystem';
 
+// Zod schema for type checking
 export const reflectionToolSchema = z.object({
-  internal_analysis: z.string().describe('INTERNAL ONLY: Your detailed analysis of the tweet quality and relevance - this will not be posted'),
-  quality_score: z.number().min(1).max(10).describe('Rate the overall quality from 1-10'),
-  relevance_score: z.number().min(1).max(10).describe('Rate how relevant and timely the tweet is from 1-10'),
-  banned_words_check: z.object({
-    has_banned_words: z.boolean().describe('Whether the tweet contains any banned words or phrases'),
-    found_banned_words: z.array(z.string()).describe('List of banned words or phrases found in the tweet'),
-    suggestions: z.string().describe('Suggestions for replacing banned words if found')
-  }).describe('Results of checking for banned words and phrases'),
+  internal_analysis: z.string(),
+  quality_score: z.number(),
+  relevance_score: z.number(),
+  critique: z.string(),
+  suggestions: z.string(),
+  should_post: z.boolean(),
+  improved_version: z.string().optional(),
   formatting_check: z.object({
-    is_lowercase: z.boolean().describe('Whether the tweet is properly formatted in lowercase'),
-    has_proper_breaks: z.boolean().describe('Whether line breaks are used appropriately'),
-    formatting_issues: z.array(z.string()).describe('List of any formatting issues found')
-  }).describe('Results of checking tweet formatting'),
+    is_lowercase: z.boolean(),
+    has_proper_breaks: z.boolean(),
+    formatting_issues: z.array(z.string())
+  }),
+  authenticity_check: z.object({
+    is_authentic: z.boolean(),
+    has_specific_examples: z.boolean(),
+    natural_conversation: z.boolean(),
+    authenticity_issues: z.array(z.string()),
+    slang_usage: z.object({
+      is_natural: z.boolean(),
+      used_terms: z.array(z.string())
+    })
+  }),
   content_check: z.object({
-    is_natural: z.boolean().describe('Whether the language feels natural and conversational'),
-    maintains_personality: z.boolean().describe('Whether it maintains noot\'s personality'),
-    content_issues: z.array(z.string()).describe('List of any content issues found')
-  }).describe('Results of checking tweet content'),
-  critique: z.string().describe('INTERNAL ONLY: Specific points of critique about the tweet - this will not be posted'),
-  suggestions: z.string().describe('INTERNAL ONLY: Suggestions for improvement if needed - this will not be posted'),
-  should_post: z.boolean().describe('Final decision on whether the original tweet should be posted'),
-  improved_version: z.string().optional().describe('If needed, provide an improved version of the original tweet')
+    is_natural: z.boolean(),
+    maintains_personality: z.boolean(),
+    content_issues: z.array(z.string()),
+    specific_examples: z.array(z.string()),
+    connected_ideas: z.array(z.string()),
+    original_observations: z.array(z.string())
+  })
 });
 
+// Tool definition with JSON schema
 export const ReflectionTool: Tool = {
   type: 'function',
   function: {
     name: 'reflect_on_tweet',
-    description: 'INTERNAL TOOL: Critically analyze a tweet before posting to ensure high quality, relevance, and compliance with guidelines.',
-    strict: true,
+    description: 'Analyze a tweet for authenticity and basic content quality',
     parameters: {
       type: 'object',
-      required: [
-        'internal_analysis',
-        'quality_score',
-        'relevance_score',
-        'banned_words_check',
-        'formatting_check',
-        'content_check',
-        'critique',
-        'suggestions',
-        'should_post'
-      ],
+      required: ['internal_analysis', 'quality_score', 'relevance_score', 'critique', 'suggestions', 'should_post', 'formatting_check', 'authenticity_check', 'content_check'],
       properties: {
-        internal_analysis: {
-          type: 'string',
-          description: 'INTERNAL ONLY: Your detailed analysis of why this tweet is or is not good enough to post - this will not be posted'
-        },
-        quality_score: {
-          type: 'number',
-          description: 'Rate the overall quality from 1-10'
-        },
-        relevance_score: {
-          type: 'number',
-          description: 'Rate how relevant and timely the tweet is from 1-10'
-        },
-        banned_words_check: {
-          type: 'object',
-          description: 'Results of checking for banned words and phrases',
-          required: ['has_banned_words', 'found_banned_words', 'suggestions'],
-          properties: {
-            has_banned_words: {
-              type: 'boolean',
-              description: 'Whether the tweet contains any banned words or phrases'
-            },
-            found_banned_words: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'List of banned words or phrases found in the tweet'
-            },
-            suggestions: {
-              type: 'string',
-              description: 'Suggestions for replacing banned words if found'
-            }
-          }
-        },
+        internal_analysis: { type: 'string' },
+        quality_score: { type: 'number' },
+        relevance_score: { type: 'number' },
+        critique: { type: 'string' },
+        suggestions: { type: 'string' },
+        should_post: { type: 'boolean' },
+        improved_version: { type: 'string' },
         formatting_check: {
           type: 'object',
-          description: 'Results of checking tweet formatting',
           required: ['is_lowercase', 'has_proper_breaks', 'formatting_issues'],
           properties: {
-            is_lowercase: {
-              type: 'boolean',
-              description: 'Whether the tweet is properly formatted in lowercase'
-            },
-            has_proper_breaks: {
-              type: 'boolean',
-              description: 'Whether line breaks are used appropriately'
-            },
-            formatting_issues: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'List of any formatting issues found'
+            is_lowercase: { type: 'boolean' },
+            has_proper_breaks: { type: 'boolean' },
+            formatting_issues: { type: 'array', items: { type: 'string' } }
+          }
+        },
+        authenticity_check: {
+          type: 'object',
+          required: ['is_authentic', 'has_specific_examples', 'natural_conversation', 'authenticity_issues', 'slang_usage'],
+          properties: {
+            is_authentic: { type: 'boolean' },
+            has_specific_examples: { type: 'boolean' },
+            natural_conversation: { type: 'boolean' },
+            authenticity_issues: { type: 'array', items: { type: 'string' } },
+            slang_usage: {
+              type: 'object',
+              required: ['is_natural', 'used_terms'],
+              properties: {
+                is_natural: { type: 'boolean' },
+                used_terms: { type: 'array', items: { type: 'string' } }
+              }
             }
           }
         },
         content_check: {
           type: 'object',
-          description: 'Results of checking tweet content',
-          required: ['is_natural', 'maintains_personality', 'content_issues'],
+          required: ['is_natural', 'maintains_personality', 'content_issues', 'specific_examples', 'connected_ideas', 'original_observations'],
           properties: {
-            is_natural: {
-              type: 'boolean',
-              description: 'Whether the language feels natural and conversational'
-            },
-            maintains_personality: {
-              type: 'boolean',
-              description: 'Whether it maintains noot\'s personality'
-            },
-            content_issues: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'List of any content issues found'
-            }
+            is_natural: { type: 'boolean' },
+            maintains_personality: { type: 'boolean' },
+            content_issues: { type: 'array', items: { type: 'string' } },
+            specific_examples: { type: 'array', items: { type: 'string' } },
+            connected_ideas: { type: 'array', items: { type: 'string' } },
+            original_observations: { type: 'array', items: { type: 'string' } }
           }
-        },
-        critique: {
-          type: 'string',
-          description: 'INTERNAL ONLY: Specific points of critique about the tweet - this will not be posted'
-        },
-        suggestions: {
-          type: 'string',
-          description: 'INTERNAL ONLY: Concrete suggestions for improvement if needed - this will not be posted'
-        },
-        should_post: {
-          type: 'boolean',
-          description: 'Final decision on whether the original tweet should be posted'
-        },
-        improved_version: {
-          type: 'string',
-          description: 'If needed, provide an improved version of the original tweet'
         }
       }
     }

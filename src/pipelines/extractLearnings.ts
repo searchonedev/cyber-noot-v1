@@ -71,14 +71,14 @@ export async function extractAndSaveLearnings(sessionId: string) {
         }
 
         // Add self knowledge
-        if (learnings.output.satoshi_self?.length > 0) {
-            const selfTemplate = formatLearningsToTemplate(learnings.output.satoshi_self);
+        if (learnings.output.noot_self?.length > 0) {
+            const selfTemplate = formatLearningsToTemplate(learnings.output.noot_self);
             await addSelfKnowledge(selfTemplate);
             Logger.log("Added self knowledge memories");
 
             // Save self knowledge learnings to database
-            for (const learning of learnings.output.satoshi_self) {
-                await Learnings.saveLearning('satoshi_self', learning, sessionId);
+            for (const learning of learnings.output.noot_self) {
+                await Learnings.saveLearning('noot_self', learning, sessionId);
             }
         }
 

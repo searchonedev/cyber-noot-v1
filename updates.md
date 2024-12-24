@@ -1,5 +1,56 @@
 # Updates Log
 
+## Personality System Unification [2024-12-23]
+
+### Major Changes
+1. Memory System Updates
+   - Replaced all `satoshi_self` references with `noot_self`
+   - Updated memory types in database schema
+   - Modified memory extraction and storage logic
+   - Ensured consistency in personality across all agents
+
+2. Documentation Updates
+   - Updated unified personality documentation
+   - Removed legacy Satoshi references
+   - Enhanced Noot personality guidelines
+   - Updated agent system documentation
+
+3. Core Files Modified
+   - `src/supabase/functions/memory/learnings.ts`
+   - `src/ai/agents/extractorAgent/extractorTool.ts`
+   - `src/pipelines/extractLearnings.ts`
+   - `src/memory/client.ts`
+   - `src/memory/wipeMemories.ts`
+   - `docs/concepts/agent-system.mdx`
+   - `docs/concepts/unified-personality.mdx`
+
+### Implementation Notes
+```typescript
+// Updated memory types
+type LearningType = 
+  | 'world_knowledge'
+  | 'crypto_ecosystem_knowledge'
+  | 'noot_self'
+  | 'user_specific';
+
+// Memory client configuration
+const memoryConfig = {
+  agent_id: "noot",
+  categories: {
+    self: "noot_self",
+    world: "world_knowledge",
+    crypto: "crypto_ecosystem_knowledge",
+    user: "user_specific"
+  }
+};
+```
+
+### Migration Notes
+- Existing `satoshi_self` memories should be manually reviewed and migrated
+- New memories will be stored under `noot_self`
+- Memory extraction pipeline now consistently uses Noot's personality
+- All agents updated to reflect Noot's communication style
+
 ## Version Control Summary [2024-12-20]
 
 ### Major Changes

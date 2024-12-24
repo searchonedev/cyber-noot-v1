@@ -26,44 +26,60 @@ export class ReflectionAgent extends BaseAgent<typeof reflectionToolSchema> {
     critique: string;
     suggestions: string;
     improved_version?: string;
-    banned_words_check: {
-      has_banned_words: boolean;
-      found_banned_words: string[];
-      suggestions: string;
-    };
     formatting_check: {
       is_lowercase: boolean;
       has_proper_breaks: boolean;
       formatting_issues: string[];
     };
+    authenticity_check: {
+      is_authentic: boolean;
+      has_specific_examples: boolean;
+      natural_conversation: boolean;
+      authenticity_issues: string[];
+      slang_usage: {
+        is_natural: boolean;
+        used_terms: string[];
+      }
+    };
     content_check: {
       is_natural: boolean;
       maintains_personality: boolean;
       content_issues: string[];
+      specific_examples: string[];
+      connected_ideas: string[];
+      original_observations: string[];
     };
   }> {
     // Handle missing tweet text
     if (!tweetText || tweetText.trim() === '') {
       return {
         should_post: false,
-        quality_score: 1, // Minimum required score
-        relevance_score: 1, // Minimum required score
+        quality_score: 1,
+        relevance_score: 1,
         critique: 'No tweet text provided for analysis',
         suggestions: 'Please provide the tweet text to analyze',
-        banned_words_check: {
-          has_banned_words: false,
-          found_banned_words: [],
-          suggestions: 'No tweet text to check for banned words'
-        },
         formatting_check: {
           is_lowercase: false,
           has_proper_breaks: false,
           formatting_issues: ['No tweet text to analyze formatting']
         },
+        authenticity_check: {
+          is_authentic: false,
+          has_specific_examples: false,
+          natural_conversation: false,
+          authenticity_issues: ['No tweet text to analyze authenticity'],
+          slang_usage: {
+            is_natural: false,
+            used_terms: []
+          }
+        },
         content_check: {
           is_natural: false,
           maintains_personality: false,
-          content_issues: ['No tweet content provided for analysis']
+          content_issues: ['No tweet content provided for analysis'],
+          specific_examples: [],
+          connected_ideas: [],
+          original_observations: []
         }
       };
     }
@@ -77,33 +93,30 @@ ${tweetText}
 [CONTEXT]
 ${context}
 
-Your task is to analyze this tweet and determine if it meets our quality standards.
-DO NOT treat this analysis as a tweet to post - you are evaluating the tweet text shown above.
+Your task is to analyze this tweet based on noot's core traits:
+- a chill penguin who loves chatting about bitcoin, runes, and ordinals
+- shares genuine thoughts about cool projects and innovations
+- more interested in real conversations than forced memes
+- naturally playful but always authentic
 
 ANALYSIS STEPS:
 
-1. BANNED WORDS CHECK
-   - Look for any banned words or phrases (wagmi, slurs, hate speech, etc.)
-   - Check for explicit financial advice or price promises
-   - Suggest alternatives if banned words are found
+1. AUTHENTICITY CHECK
+   - Does it feel genuine? (not looking for perfection, just authenticity)
+   - Is enthusiasm natural? (can be brief but should be real)
+   - Is "noot noot!" used when excited? (optional, only for genuine excitement)
 
-2. FORMATTING CHECK
-   - Verify all text is lowercase
-   - Check line break usage
-   - Identify any formatting issues
+2. CONTENT CHECK
+   - Does it contribute to the conversation? (even brief responses can add value)
+   - Does it maintain noot's friendly vibe?
+   - Does it avoid harmful or inappropriate content?
 
-3. CONTENT QUALITY
-   - Assess natural language and conversational tone
-   - Verify personality consistency
-   - Evaluate engagement potential
-   - Check relevance and timeliness
+3. FINAL CHECK
+   - Would this help build community?
+   - Is it something noot would naturally say?
+   - Suggest improvements only if really needed
 
-4. FINAL VALIDATION
-   - Consider all checks together
-   - Decide if tweet should be posted
-   - Provide improved version if needed
-
-Remember: Your analysis is internal only - it will not be posted as a tweet.`;
+Remember: Focus on authenticity over perfection. Brief but genuine responses are fine.`;
 
     const response = await this.run(prompt);
     
@@ -120,9 +133,29 @@ Remember: Your analysis is internal only - it will not be posted as a tweet.`;
       critique: response.output.critique,
       suggestions: response.output.suggestions,
       improved_version: response.output.improved_version,
-      banned_words_check: response.output.banned_words_check,
-      formatting_check: response.output.formatting_check,
-      content_check: response.output.content_check,
+      formatting_check: {
+        is_lowercase: response.output.formatting_check.is_lowercase,
+        has_proper_breaks: response.output.formatting_check.has_proper_breaks,
+        formatting_issues: response.output.formatting_check.formatting_issues
+      },
+      authenticity_check: {
+        is_authentic: response.output.authenticity_check.is_authentic,
+        has_specific_examples: response.output.authenticity_check.has_specific_examples,
+        natural_conversation: response.output.authenticity_check.natural_conversation,
+        authenticity_issues: response.output.authenticity_check.authenticity_issues,
+        slang_usage: {
+          is_natural: response.output.authenticity_check.slang_usage.is_natural,
+          used_terms: response.output.authenticity_check.slang_usage.used_terms
+        }
+      },
+      content_check: {
+        is_natural: response.output.content_check.is_natural,
+        maintains_personality: response.output.content_check.maintains_personality,
+        content_issues: response.output.content_check.content_issues,
+        specific_examples: response.output.content_check.specific_examples,
+        connected_ideas: response.output.content_check.connected_ideas,
+        original_observations: response.output.content_check.original_observations
+      }
     };
   }
 } 

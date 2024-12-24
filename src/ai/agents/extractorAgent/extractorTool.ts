@@ -13,7 +13,7 @@ export const extractorToolSchema = z.object({
   summary: z.string().describe('A concise paragraph summarizing the entire terminal log'),
   world_knowledge: z.array(z.string()).describe('Knowledge learned about the world, excluding crypto'),
   crypto_ecosystem_knowledge: z.array(z.string()).describe('Knowledge about the crypto ecosystem'),
-  satoshi_self: z.array(z.string()).describe('AI agent\'s personal growth and perspectives'),
+  noot_self: z.array(z.string()).describe('AI agent\'s personal growth and perspectives'),
   user_specific: z.array(userLearningSchema).optional().describe('Learnings about specific users encountered in the conversation'),
 });
 
@@ -28,7 +28,7 @@ export const ExtractorTool: Tool = {
       "required": [
         "world_knowledge",
         "crypto_ecosystem_knowledge",
-        "satoshi_self",
+        "noot_self",
         "summary"
       ],
       "properties": {
@@ -50,7 +50,7 @@ export const ExtractorTool: Tool = {
           },
           "description": "A list of knowledge learned about the crypto ecosystem and its culture."
         },
-        "satoshi_self": {
+        "noot_self": {
           "type": "array",
           "items": {
             "type": "string"

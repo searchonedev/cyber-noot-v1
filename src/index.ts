@@ -9,7 +9,7 @@ import { ensureAuthenticated } from './twitter/twitterClient';
 import { ModelType, Message } from './ai/types/agentSystem';
 import dotenv from 'dotenv';
 import { v4 as uuidv4 } from 'uuid';
-import { Logger } from './utils/logger';
+import { Logger, LogLevel } from './utils/logger';
 import { createTerminalEntry, updateTerminalResponse, updateTerminalStatus } from './supabase/functions/terminal/terminalEntries';
 import { 
   storeTerminalMessage, 
@@ -21,7 +21,8 @@ import { getCurrentTimestamp } from './utils/formatTimestamps';
 import { initializeMemory } from './memory/initializeMemory';
 import { getCooldownStatus } from './supabase/functions/twitter/cooldowns';
 
-Logger.enable();
+// Set log level to INFO by default
+Logger.setLogLevel(LogLevel.INFO);
 
 dotenv.config();
 
@@ -46,6 +47,98 @@ function getModelClient(modelType: ModelType) {
       return new AnthropicClient("claude-3-5-haiku-20241022", { temperature: 1 });
   }
 }
+
+const REFLECTION_TOOL = {
+  name: "reflect_on_tweet",
+  description: "INTERNAL TOOL: Critically analyze a tweet before posting to ensure high quality, relevance, and authenticity.",
+  input_schema: {
+    type: "object",
+    required: [
+      "internal_analysis",
+      "authenticity_check",  // New field
+      "quality_score",
+      "relevance_score",
+      "content_check",
+      "critique",
+      "suggestions"
+    ],
+    properties: {
+      internal_analysis: {
+        type: "string",
+        description: "INTERNAL ONLY: Your detailed analysis of why this tweet is or is not authentic and engaging"
+      },
+      authenticity_check: {  // New check
+        type: "object",
+        description: "Results of checking tweet authenticity",
+        required: [
+          "is_authentic",
+          "has_specific_examples",
+          "natural_conversation",
+          "authenticity_issues"
+        ],
+        properties: {
+          is_authentic: {
+            type: "boolean",
+            description: "Whether the tweet feels genuine and unforced"
+          },
+          has_specific_examples: {
+            type: "boolean",
+            description: "Whether the tweet includes specific examples rather than generic statements"
+          },
+          natural_conversation: {
+            type: "boolean",
+            description: "Whether the language flows naturally like a real conversation"
+          },
+          authenticity_issues: {
+            type: "array",
+            items: { type: "string" },
+            description: "List of any authenticity issues found"
+          }
+        }
+      },
+      quality_score: {
+        type: "number",
+        description: "Rate the overall quality from 1-10, considering authenticity and specific examples"
+      },
+      relevance_score: {
+        type: "number",
+        description: "Rate how relevant and timely the tweet is from 1-10"
+      },
+      content_check: {
+        type: "object",
+        description: "Results of checking tweet content",
+        required: [
+          "is_natural",
+          "maintains_personality",
+          "content_issues"
+        ],
+        properties: {
+          is_natural: {
+            type: "boolean",
+            description: "Whether the language feels natural and conversational"
+          },
+          maintains_personality: {
+            type: "boolean",
+            description: "Whether it maintains noot's authentic personality without forcing it"
+          },
+          content_issues: {
+            type: "array",
+            items: { type: "string" },
+            description: "List of any content issues found"
+          }
+        }
+      },
+      critique: {
+        type: "string",
+        description: "INTERNAL ONLY: Specific points about authenticity and conversation quality"
+      },
+      suggestions: {
+        type: "string",
+        description: "INTERNAL ONLY: How to make the tweet more authentic and conversational"
+      }
+    }
+  }
+};
 
 export async function startAISystem() {
   try {

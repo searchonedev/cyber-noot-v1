@@ -83,47 +83,26 @@ Usernames mentioned: ${usernames?.join(', ') || 'none'}`;
     const reflection = await reflectionAgent.analyzeTweet(replyText, reflectionContext);
     Logger.log('Reply reflection:', JSON.stringify(reflection, null, 2));
 
-    // Check for banned words first
-    if (reflection.banned_words_check.has_banned_words) {
-      Logger.log('Found banned words:', reflection.banned_words_check.found_banned_words);
-      if (reflection.improved_version) {
-        Logger.log('Using improved version without banned words');
-        replyText = reflection.improved_version;
-      } else {
-        throw new Error(`Reply contains banned words: ${reflection.banned_words_check.found_banned_words.join(', ')}`);
-      }
-    }
-
-    // Check formatting
-    if (!reflection.formatting_check.is_lowercase || !reflection.formatting_check.has_proper_breaks) {
-      Logger.log('Formatting issues found:', reflection.formatting_check.formatting_issues);
-      if (reflection.improved_version) {
-        Logger.log('Using improved version with correct formatting');
-        replyText = reflection.improved_version;
-      } else {
-        throw new Error(`Reply has formatting issues: ${reflection.formatting_check.formatting_issues.join(', ')}`);
-      }
-    }
-
-    // Check content quality
-    if (!reflection.content_check.is_natural || !reflection.content_check.maintains_personality) {
-      Logger.log('Content issues found:', reflection.content_check.content_issues);
-      if (reflection.improved_version) {
-        Logger.log('Using improved version with better content');
-        replyText = reflection.improved_version;
-      } else {
-        throw new Error(`Reply has content issues: ${reflection.content_check.content_issues.join(', ')}`);
-      }
-    }
-
-    // Final check if we should post
+    // Check if we should post the tweet based on reflection analysis
     if (!reflection.should_post) {
+      Logger.log(`Reply needs improvement: ${reflection.critique}`);
+      
+      // If we have an improved version, use that instead
       if (reflection.improved_version) {
-        Logger.log('Using improved version suggested by reflection');
         replyText = reflection.improved_version;
       } else {
-        throw new Error(`Reply rejected by reflection: ${reflection.critique}`);
+        return {
+          success: false,
+          message: `Reply generation failed: ${reflection.critique}`,
+          replyText
+        };
       }
+    }
+
+    // Only use improved version in extreme cases (very low quality)
+    if (reflection.improved_version && reflection.quality_score < 2) {
+      Logger.log('Using improved version due to extremely low quality score');
+      replyText = reflection.improved_version;
     }
 
     // Handle media (GIF) if specified

@@ -6,7 +6,7 @@ interface LearningEntry {
   id: number;
   session_id: string | null;
   user_id: string | null;
-  learning_type: 'world_knowledge' | 'crypto_ecosystem_knowledge' | 'satoshi_self' | 'user_specific';
+  learning_type: 'world_knowledge' | 'crypto_ecosystem_knowledge' | 'noot_self' | 'user_specific';
   content: string;
   created_at?: string;
 }
@@ -14,7 +14,7 @@ interface LearningEntry {
 export class Learnings {
   // Save a learning entry
   static async saveLearning(
-    learningType: 'world_knowledge' | 'crypto_ecosystem_knowledge' | 'satoshi_self' | 'user_specific',
+    learningType: 'world_knowledge' | 'crypto_ecosystem_knowledge' | 'noot_self' | 'user_specific',
     content: string,
     sessionId: string | null,
     userId: string | null = null
@@ -36,7 +36,7 @@ export class Learnings {
 
   // Retrieve learnings by type
   static async getLearningsByType(
-    learningType: 'world_knowledge' | 'crypto_ecosystem_knowledge' | 'satoshi_self' | 'user_specific',
+    learningType: 'world_knowledge' | 'crypto_ecosystem_knowledge' | 'noot_self' | 'user_specific',
     sessionId: string | null = null
   ): Promise<LearningEntry[]> {
     try {
