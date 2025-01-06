@@ -1,50 +1,53 @@
-import { assembleTwitterInterface } from '../twitter/utils/imageUtils';
 import { ReplyAgent } from '../ai/agents/replyAgent/replyAgent';
 import { ReflectionAgent } from '../ai/agents/reflectionAgent/reflectionAgent';
-import { Logger } from '../utils/logger';
 import { AnthropicClient } from '../ai/models/clients/AnthropicClient';
+import { sendTweet } from '../twitter/functions/sendTweet';
 import { replyToTweet } from '../twitter/functions/replyToTweet';
 import { loadMemories } from './loadMemories';
+import { getFormattedRecentHistory } from '../supabase/functions/terminal/terminalHistory';
+import { Logger } from '../utils/logger';
+import { ReplyResult } from '../twitter/types/tweetResults';
+import { isCooldownActive } from '../twitter/utils/cooldowns';
+import { scraper } from '../twitter/twitterClient';
+import { analyzeTweetContext } from '../twitter/utils/tweetUtils';
+import { assembleTwitterInterface } from '../twitter/utils/imageUtils';
 import { searchTenorGif } from '../twitter/utils/gifUtils';
-import { isCooldownActive } from '../supabase/functions/twitter/cooldowns';
 
-// Type for the reply result
-interface ReplyResult {
-  success: boolean;
-  tweetId?: string;
-  message: string;
-  replyText: string;
-  mediaUrls?: string[];
-  reflection?: {
-    quality_score: number;
-    relevance_score: number;
-    critique: string;
-  };
-}
-
-/**
- * Enhanced pipeline that handles the entire reply process including:
- * - Interface assembly
- * - Reply generation
- * - Quality control through reflection
- * - Media handling (GIFs)
- * - Tweet posting
- * - Result formatting
- */
 export async function generateAndPostReply(
   tweetId: string,
   textOrPrompt: string = "What would you reply to this tweet?"
 ): Promise<ReplyResult> {
   Logger.enable();
   try {
-    // Check for reply cooldown first - before any expensive operations
+    // First check if the tweet exists and is a valid mention
+    const targetTweet = await scraper.getTweet(tweetId);
+    if (!targetTweet) {
+      return {
+        success: false,
+        message: 'Failed to fetch target tweet',
+        replyText: ''
+      };
+    }
+
+    // Check if this is a mention or reply to the bot - do this before any expensive operations
+    const tweetContext = await analyzeTweetContext(targetTweet);
+    if (tweetContext.type !== 'mention' && tweetContext.type !== 'reply_to_bot') {
+      Logger.log(`Tweet ${tweetId} is not a valid mention or reply`);
+      return {
+        success: false,
+        message: 'Can only reply to mentions or replies to bot tweets',
+        replyText: ''
+      };
+    }
+
+    // Then check for reply cooldown
     const cooldownInfo = await isCooldownActive('reply');
     if (cooldownInfo.isActive) {
       Logger.log(`Reply cooldown active for ${cooldownInfo.remainingTime} minutes. Skipping tweet generation.`);
       return {
         success: false,
         message: `Cannot reply right now. Cooldown is active for ${cooldownInfo.remainingTime} minutes.`,
-        replyText: '',
+        replyText: ''
       };
     }
 

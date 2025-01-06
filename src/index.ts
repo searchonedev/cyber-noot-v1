@@ -1,4 +1,4 @@
-// src/ai/index.ts
+// src/index.ts
 
 import { TerminalAgent } from './ai/agents/terminalAgent/terminalAgent';
 import { FireworkClient } from './ai/models/clients/FireworkClient';
@@ -19,7 +19,7 @@ import {
 import { extractAndSaveLearnings } from './pipelines/extractLearnings';
 import { getCurrentTimestamp } from './utils/formatTimestamps';
 import { initializeMemory } from './memory/initializeMemory';
-import { getCooldownStatus } from './supabase/functions/twitter/cooldowns';
+import { getCooldownStatus } from './twitter/utils/cooldowns';
 
 // Set log level to INFO by default
 Logger.setLogLevel(LogLevel.INFO);
@@ -48,93 +48,28 @@ function getModelClient(modelType: ModelType) {
   }
 }
 
+// Simplified reflection tool schema
 const REFLECTION_TOOL = {
   name: "reflect_on_tweet",
-  description: "INTERNAL TOOL: Critically analyze a tweet before posting to ensure high quality, relevance, and authenticity.",
+  description: "Analyze tweet quality and authenticity",
   input_schema: {
     type: "object",
-    required: [
-      "internal_analysis",
-      "authenticity_check",  // New field
-      "quality_score",
-      "relevance_score",
-      "content_check",
-      "critique",
-      "suggestions"
-    ],
+    required: ["analysis", "scores", "should_post"],
     properties: {
-      internal_analysis: {
+      analysis: {
         type: "string",
-        description: "INTERNAL ONLY: Your detailed analysis of why this tweet is or is not authentic and engaging"
+        description: "Brief analysis of tweet quality"
       },
-      authenticity_check: {  // New check
+      scores: {
         type: "object",
-        description: "Results of checking tweet authenticity",
-        required: [
-          "is_authentic",
-          "has_specific_examples",
-          "natural_conversation",
-          "authenticity_issues"
-        ],
         properties: {
-          is_authentic: {
-            type: "boolean",
-            description: "Whether the tweet feels genuine and unforced"
-          },
-          has_specific_examples: {
-            type: "boolean",
-            description: "Whether the tweet includes specific examples rather than generic statements"
-          },
-          natural_conversation: {
-            type: "boolean",
-            description: "Whether the language flows naturally like a real conversation"
-          },
-          authenticity_issues: {
-            type: "array",
-            items: { type: "string" },
-            description: "List of any authenticity issues found"
-          }
+          quality: { type: "number" },
+          relevance: { type: "number" }
         }
       },
-      quality_score: {
-        type: "number",
-        description: "Rate the overall quality from 1-10, considering authenticity and specific examples"
-      },
-      relevance_score: {
-        type: "number",
-        description: "Rate how relevant and timely the tweet is from 1-10"
-      },
-      content_check: {
-        type: "object",
-        description: "Results of checking tweet content",
-        required: [
-          "is_natural",
-          "maintains_personality",
-          "content_issues"
-        ],
-        properties: {
-          is_natural: {
-            type: "boolean",
-            description: "Whether the language feels natural and conversational"
-          },
-          maintains_personality: {
-            type: "boolean",
-            description: "Whether it maintains noot's authentic personality without forcing it"
-          },
-          content_issues: {
-            type: "array",
-            items: { type: "string" },
-            description: "List of any content issues found"
-          }
-        }
-      },
-      critique: {
-        type: "string",
-        description: "INTERNAL ONLY: Specific points about authenticity and conversation quality"
-      },
-      suggestions: {
-        type: "string",
-        description: "INTERNAL ONLY: How to make the tweet more authentic and conversational"
+      should_post: {
+        type: "boolean",
+        description: "Whether the tweet should be posted"
       }
     }
   }
@@ -144,63 +79,41 @@ export async function startAISystem() {
   try {
     const sessionId = uuidv4();
     
-    // Initialize memory system
-    Logger.log('Initializing memory system...');
     await initializeMemory();
-    Logger.log('Memory system initialized successfully');
-    
     await ensureAuthenticated();
     
-    // Get model type from environment variable or use default
     const modelType = (process.env.AI_MODEL_TYPE || 'anthropic').toLowerCase() as ModelType;
-    Logger.log(`Using ${modelType} model client...`);
     const modelClient = getModelClient(modelType);
-
-    // Set initial active status
     await updateTerminalStatus(true);
-    Logger.log('Terminal status set to active');
 
-    while (true) { // Run indefinitely with idle periods
+    while (true) {
       try {
         let actionCount = 0;
-        const MAX_ACTIONS = 30; // Reduced for testing
+        const MAX_ACTIONS = 30;
 
-        // Active period
         while (actionCount < MAX_ACTIONS) {
-          // Start a new TerminalAgent instance
           const terminalAgent = new TerminalAgent(modelClient);
 
-          // Load the latest short-term history into the new agent
-          try {
-            const shortTermHistory = await getShortTermHistory(6);
-            if (shortTermHistory.length > 0) {
-              Logger.log('Loading existing short-term history...');
-              terminalAgent.loadChatHistory(shortTermHistory);
-            }
-          } catch (error) {
-            Logger.log('Error loading short-term history:', error);
+          // Load minimal context - only last 3 messages
+          const shortTermHistory = await getShortTermHistory(3);
+          if (shortTermHistory.length > 0) {
+            terminalAgent.loadChatHistory(shortTermHistory);
           }
 
-          // Before making the tool call, ensure the last message in the chat history 
-          // is from the user, not the assistant
-
-          // If the last message is from the assistant, add a user message
-          if (terminalAgent.getLastAgentMessage()) {
-            terminalAgent.addUserMessage('Please proceed with your next action.');
+          // Only add cooldown status if needed for next action
+          const lastMessage = terminalAgent.getLastAgentMessage();
+          if (!lastMessage || lastMessage.content?.includes('tweet') || lastMessage.content?.includes('post')) {
+            const cooldownStatus = await getCooldownStatus();
+            terminalAgent.addUserMessage(cooldownStatus);
+          } else {
+            terminalAgent.addUserMessage('continue');
           }
 
-          // Update cooldown status before running the agent
-          const cooldownStatus = await getCooldownStatus();
-          terminalAgent.addUserMessage(`Current Cooldown Status:\n${cooldownStatus}`);
-
-          // Run the agent
           const functionResult = await terminalAgent.run();
-
           if (!functionResult.success) {
             throw new Error(functionResult.error);
           }
 
-          // Create initial terminal entry
           const entryId = await createTerminalEntry(sessionId, {
             internal_thought: functionResult.output.internal_thought,
             plan: functionResult.output.plan,
@@ -211,73 +124,42 @@ export async function startAISystem() {
             throw new Error('Failed to create terminal entry');
           }
 
-          // Execute command
           const commandOutput = await executeCommand(functionResult.output.terminal_command);
-
-          // Update the same entry with the response
           await updateTerminalResponse(entryId, commandOutput.output);
 
-          // Retrieve the last assistant message from the agent's message history
+          // Store only essential messages
           const lastAssistantMessage = terminalAgent.getLastAgentMessage();
-
           if (lastAssistantMessage) {
-            // Store agent's response in short-term history
             await storeTerminalMessage(lastAssistantMessage, sessionId);
           }
 
-          // Store terminal output in short-term history and update agent's message history
           const terminalOutputMessage: Message = {
             role: 'user',
-            content: `TERMINAL OUTPUT ${getCurrentTimestamp()}: ${commandOutput.output}`,
+            content: `OUTPUT ${getCurrentTimestamp()}: ${commandOutput.output}`,
           };
-          terminalAgent.addMessage(terminalOutputMessage);
           await storeTerminalMessage(terminalOutputMessage, sessionId);
 
-          await new Promise((resolve) => setTimeout(resolve, 60000));
+          await new Promise(resolve => setTimeout(resolve, 60000));
           actionCount++;
         }
 
-        // Before entering idle mode, initiate the memory process, and wipe the short term history
+        // Memory processing and cleanup
         try {
-          Logger.log('Initiating memory processing...');
-          
-          // Try to process memories first
-          try {
-            await extractAndSaveLearnings(sessionId);
-            Logger.log('Memory processing complete');
-          } catch (error) {
-            Logger.log('Error in extractAndSaveLearnings:', error);
-            // Continue to clear history even if learning extraction fails
-          }
-          
-          // Then try to clear history
-          try {
-            await clearShortTermHistory();
-            Logger.log('Short-term history cleared');
-          } catch (error) {
-            Logger.log('Error clearing short term history:', error);
-            // If clearing fails, continue to idle mode anyway
-          }
+          await extractAndSaveLearnings(sessionId);
+          await clearShortTermHistory();
         } catch (error) {
-          Logger.log('Error during memory processing:', error);
-          // Continue to idle mode even if memory processing fails
+          Logger.log('Error in memory processing:', error);
         }
 
-        // Enter idle mode
-        const idleMinutes = getRandomInt(30, 60);
-        Logger.log(`Entering idle mode for ${idleMinutes} minutes`);
-        await updateTerminalStatus(false);
-
         // Idle period
-        await new Promise((resolve) => setTimeout(resolve, idleMinutes * 60 * 1000));
-
-        // Resume active mode
-        Logger.log('Resuming active mode');
+        const idleMinutes = getRandomInt(30, 60);
+        await updateTerminalStatus(false);
+        await new Promise(resolve => setTimeout(resolve, idleMinutes * 60 * 1000));
         await updateTerminalStatus(true);
 
       } catch (error) {
         console.error('Error in AI system loop:', error);
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
   } catch (error) {

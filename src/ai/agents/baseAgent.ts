@@ -146,14 +146,14 @@ export abstract class BaseAgent<T extends z.ZodTypeAny | null = null> {
       
       if (matches) {
         Logger.log(`\n🔎 Found ${matches.length} instances of ${placeholder}`);
-        prompt = prompt.replace(regex, value);
+        prompt = prompt.replace(regex, String(value));
       }
     }
 
     return prompt;
   }
 
-  protected async handleFunctionCall(args: any): Promise<any> {
+  protected async handleFunctionCall(args: Record<string, unknown>): Promise<unknown> {
     return args;
   }
 

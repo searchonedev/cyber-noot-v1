@@ -7,7 +7,7 @@ import { getFormattedRecentHistory } from '../supabase/functions/terminal/termin
 import { generateImage } from './mediaGeneration/imageGen';
 import { Logger } from '../utils/logger';
 import { MainTweetResult } from './types';
-import { isCooldownActive } from '../supabase/functions/twitter/cooldowns';
+import { isCooldownActive } from '../twitter/utils/cooldowns';
 
 export async function generateAndPostMediaTweet(): Promise<MainTweetResult> {
   Logger.enable();

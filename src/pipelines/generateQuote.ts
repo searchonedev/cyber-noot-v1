@@ -5,7 +5,7 @@ import { Logger } from '../utils/logger';
 import { AnthropicClient } from '../ai/models/clients/AnthropicClient';
 import { quoteTweet } from '../twitter/functions/quoteTweet';
 import { loadMemories } from './loadMemories';
-import { isCooldownActive } from '../supabase/functions/twitter/cooldowns';
+import { isCooldownActive } from '../twitter/utils/cooldowns';
 
 // Type for the quote result
 interface QuoteResult {

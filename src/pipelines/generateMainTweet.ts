@@ -9,7 +9,7 @@ import { generateImage } from './mediaGeneration/imageGen';
 import { generateImageToVideo } from './mediaGeneration/combinedGeneration';
 import { Logger } from '../utils/logger';
 import { MainTweetResult } from './types';
-import { isCooldownActive } from '../supabase/functions/twitter/cooldowns';
+import { isCooldownActive } from '../twitter/utils/cooldowns';
 import { generateVideo } from './mediaGeneration/videoGen';
 
 // List of banned words that should not appear in tweets

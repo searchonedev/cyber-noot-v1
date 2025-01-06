@@ -1,6 +1,6 @@
 import { Logger } from '../utils/logger';
 import { searchTenorGif, postTweetWithTenorGif } from '../twitter/utils/gifUtils';
-import { isCooldownActive } from '../supabase/functions/twitter/cooldowns';
+import { isCooldownActive } from '../twitter/utils/cooldowns';
 import dotenv from 'dotenv';
 
 dotenv.config();

@@ -1,6 +1,6 @@
 import { Profile, Tweet } from 'goat-x';
 import { Logger } from '../../utils/logger';
-import { scraper } from '../twitterClient';
+import { scraper } from '../../twitter/twitterClient';
 
 /**
  * Gets a tweet and its thread context

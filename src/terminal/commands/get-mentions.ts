@@ -30,7 +30,7 @@ export const twitterGetMentions: Command = {
       };
     } catch (error) {
       return {
-        output: `❌ Error fetching mentions: ${error.message}`
+        output: `❌ Error fetching mentions: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
     }
   }

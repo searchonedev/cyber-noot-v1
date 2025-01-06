@@ -1,4 +1,4 @@
-import { scraper } from '../twitterClient';
+import { scraper } from '../../twitter/twitterClient';
 import { prepareMediaData } from '../utils/mediaUtils';
 import { likeTweet } from './likeTweet';
 import { analyzeTweetContext } from '../utils/tweetUtils';
@@ -26,6 +26,16 @@ export async function replyToTweet(
   rawMediaData?: Array<{ data: Buffer; mediaType: string; }>
 ): Promise<ReplyResult> {
   try {
+    // Get the tweet we're replying to first to check if it exists
+    const targetTweet = await scraper.getTweet(replyToTweetId);
+    if (!targetTweet || !targetTweet.username) {
+      Logger.log('Failed to fetch target tweet');
+      return {
+        success: false,
+        message: 'Failed to fetch target tweet'
+      };
+    }
+
     // Check if the bot has already replied to the tweet
     const hasReplied = await hasAlreadyActioned(replyToTweetId, 'reply');
     if (hasReplied) {
@@ -33,16 +43,6 @@ export async function replyToTweet(
       return {
         success: false,
         message: 'Already replied to this tweet'
-      };
-    }
-
-    // Get the tweet we're replying to
-    const targetTweet = await scraper.getTweet(replyToTweetId);
-    if (!targetTweet || !targetTweet.username) {
-      Logger.log('Failed to fetch target tweet');
-      return {
-        success: false,
-        message: 'Failed to fetch target tweet'
       };
     }
 
@@ -61,7 +61,7 @@ export async function replyToTweet(
 
     // Send the reply using the Twitter client
     const response = await scraper.sendTweet(text, replyToTweetId, mediaData);
-    const responseData = await response.json();
+    const responseData = (await response.json()) as { data?: { create_tweet?: { tweet_results?: { result?: { rest_id?: string } } } } };
     const replyTweetId = responseData?.data?.create_tweet?.tweet_results?.result?.rest_id;
 
     if (!replyTweetId) {
@@ -96,11 +96,8 @@ export async function replyToTweet(
       };
     }
 
-    // Analyze tweet context
-    const context = {
-      ...(await analyzeTweetContext(targetTweet)),
-      twitterInterface: twitterInterface
-    };
+    // Get tweet context for logging
+    const tweetContext = await analyzeTweetContext(targetTweet);
 
     // Log the interaction with enhanced context
     await logTwitterInteraction({
@@ -108,7 +105,11 @@ export async function replyToTweet(
       userTweetText: targetTweet.text || '',
       userTweetTimestamp: targetTweet.timeParsed?.toISOString() || new Date().toISOString(),
       userId: userAccounts.userId || '',
-      context
+      context: {
+        type: tweetContext.type,
+        parentTweetId: tweetContext.parentTweetId,
+        parentTweetAuthor: tweetContext.parentTweetAuthor
+      }
     });
 
     Logger.log(`Reply sent successfully (ID: ${replyTweetId})`);

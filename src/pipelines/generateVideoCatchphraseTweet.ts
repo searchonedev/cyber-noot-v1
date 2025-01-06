@@ -3,7 +3,7 @@ import { generateVideo } from './mediaGeneration/videoGen';
 import { sendTweet } from '../twitter/functions/sendTweet';
 import { Logger } from '../utils/logger';
 import { MainTweetResult } from './types';
-import { isCooldownActive } from '../supabase/functions/twitter/cooldowns';
+import { isCooldownActive } from '../twitter/utils/cooldowns';
 
 /**
  * Generates and posts a video tweet with a short catchphrase

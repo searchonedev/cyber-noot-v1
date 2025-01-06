@@ -1,5 +1,5 @@
 import { Command } from '../types/commands';
-import { isCooldownActive } from '../../supabase/functions/twitter/cooldowns';
+import { isCooldownActive } from '../../twitter/utils/cooldowns';
 
 /**
  * @command twitter-tweet

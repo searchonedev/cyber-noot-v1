@@ -1,6 +1,6 @@
 import { Command } from '../types/commands';
 import { handleQuoteTweet } from '../../commands/twitter/quote-tweet';
-import { isCooldownActive } from '../../supabase/functions/twitter/cooldowns';
+import { isCooldownActive } from '../../twitter/utils/cooldowns';
 import { Logger } from '../../utils/logger';
 
 /**

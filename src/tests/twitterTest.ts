@@ -2,7 +2,7 @@ import { scraper } from '../twitter/twitterClient';
 import { postTweetWithTenorGif } from '../twitter/utils/gifUtils';
 import { assembleTwitterInterface } from '../twitter/utils/imageUtils';
 import { getConversationWithUser } from '../supabase/functions/twitter/getTweetContext';
-import { isCooldownActive } from '../supabase/functions/twitter/cooldowns';
+import { isCooldownActive } from '../twitter/utils/cooldowns';
 import { Logger } from '../utils/logger';
 import dotenv from 'dotenv';
 

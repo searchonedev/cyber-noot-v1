@@ -1,6 +1,6 @@
 import { Command } from '../types/commands';
 import { postTweetWithTenorGif } from '../../twitter/utils/gifUtils';
-import { isCooldownActive } from '../../supabase/functions/twitter/cooldowns';
+import { isCooldownActive } from '../../twitter/utils/cooldowns';
 import { Logger } from '../../utils/logger';
 
 /**

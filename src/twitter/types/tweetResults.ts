@@ -4,6 +4,15 @@ export interface TweetActionResult {
   tweetId?: string;
 }
 
-export interface ReplyResult extends TweetActionResult {}
+export interface ReplyResult extends TweetActionResult {
+  replyText?: string;
+  mediaUrls?: string[];
+  reflection?: {
+    quality_score: number;
+    relevance_score: number;
+    critique: string;
+  };
+}
+
 export interface QuoteResult extends TweetActionResult {}
 export interface RetweetResult extends TweetActionResult {} 
