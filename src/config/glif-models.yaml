@@ -1,0 +1,43 @@
+# Glif Model Configurations
+# Each model entry contains:
+# - id: The unique model ID from Glif
+# - triggerWord: The word/phrase that triggers this model
+# - description: A human-readable description of the model
+# - keywords: Additional words that should trigger this model (optional)
+
+models:
+  bitcoinPuppets:
+    id: cm0g8n2nl000013er1uolmig1
+    triggerWord: "smiling puppet monkey"
+    description: "bitcoin puppet model"
+    keywords: ["puppet"]
+
+  nootNoot:
+    id: cm5ptj3cb00047hjmqoa4zmzz
+    triggerWord: "$noot penguin"
+    description: "noot noot model"
+    keywords: ["noot", "penguin", "pengu"]
+
+  bipPanda:
+    id: cm0x6znk40004zpergcdzynf4
+    triggerWord: "bip panda"
+    description: "bip panda model"
+    keywords: ["panda", "bip"]
+
+  saikoHamster:
+    id: cm2899qwi0006gcbnoo73pjnb
+    triggerWord: "saiko"
+    description: "saiko hamster model"
+    keywords: ["saiko", "hamster"]
+
+  pups:
+    id: cm2p3sjkb000iqurgbpganbln
+    triggerWord: "PUPS"
+    description: "pups model"
+    keywords: ["pups"] 
+
+  dikdik:
+    id: cm5pun7yf000013yxkxx2514s
+    triggerWord: "dikdik"
+    description: "dikdik model"
+    keywords: ["dikdik"] 

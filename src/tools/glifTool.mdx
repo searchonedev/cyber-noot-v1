@@ -1,0 +1,115 @@
+# Glif Image Generation Tool
+
+A specialized tool for generating images using Glif AI models within the Feather framework.
+
+## Installation
+
+1. Ensure you have the required environment variable:
+```bash
+GLIF_API_KEY=your_api_key_here
+```
+
+2. Import the tool:
+```typescript
+import { glifTool } from '../tools/glifTool';
+```
+
+## Usage
+
+### Basic Image Generation
+
+```typescript
+const result = await glifTool.generateImage('A magical treehouse at sunset');
+console.log(result.image_url.url);
+```
+
+### Using Specific Models
+
+The tool supports several pre-configured models with trigger words:
+
+1. **Bitcoin Puppets** (Default)
+   - Trigger: "smiling puppet monkey"
+   - ID: cm0g8n2nl000013er1uolmig1
+
+2. **Noot Noot**
+   - Trigger: "$noot penguin"
+   - ID: cm3i8v9nn000xze5kyaqqez1w
+
+3. **Bip Panda**
+   - Trigger: "bip panda"
+   - ID: cm0x6znk40004zpergcdzynf4
+
+4. **Saiko Hamster**
+   - Trigger: "saiko"
+   - ID: cm2899qwi0006gcbnoo73pjnb
+
+5. **Pups World**
+   - Trigger: "$pups"
+   - ID: cm2p3sjkb000iqurgbpganbln
+
+Example using a specific model via trigger word:
+```typescript
+const result = await glifTool.generateImage('Create a $noot penguin in space');
+```
+
+### Manual Model Selection
+
+You can also specify a model ID directly:
+```typescript
+const result = await glifTool.generateImage(
+  'A magical scene',
+  'cm0g8n2nl000013er1uolmig1'
+);
+```
+
+## API Reference
+
+### `generateImage(prompt: string, modelId?: string): Promise<MessageContent>`
+
+Generates an image using the Glif AI API.
+
+#### Parameters
+
+- `prompt` (required): Description of the image to generate
+- `modelId` (optional): Specific GLIF model ID to use
+
+#### Returns
+
+Promise resolving to a `MessageContent` object:
+```typescript
+{
+  type: 'image',
+  image_url: { url: string }
+}
+```
+
+#### Error Handling
+
+The tool throws errors for:
+- Missing API key
+- Empty prompts
+- Invalid API responses
+- Network failures
+
+## Best Practices
+
+1. **Model Selection**
+   - Use trigger words for consistent results
+   - Default model (Bitcoin Puppets) works well for general prompts
+
+2. **Prompts**
+   - Be specific and descriptive
+   - Include style preferences when needed
+   - Keep prompts concise but detailed
+
+3. **Error Handling**
+   - Always wrap calls in try/catch blocks
+   - Log errors appropriately
+   - Provide fallback behavior when needed
+
+## Future Enhancements
+
+- Batch Processing
+- Result Caching
+- Advanced Model Selection
+- Custom Trigger Words 

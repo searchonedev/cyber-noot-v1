@@ -10,6 +10,7 @@ import { followCommand } from './follow';
 import { replyToTweetCommand } from './reply-to-tweet';
 import { twitterQuote } from './quote-tweet';
 import { postVideoCatchphrase } from './post-video-catchphrase';
+import { checkMarketCommand } from './check-market';
 
 // Export a single commands object with consistent naming
 export const commands: { [key: string]: Command } = {
@@ -56,6 +57,10 @@ export const commands: { [key: string]: Command } = {
   'post-video-catchphrase': {
     ...postVideoCatchphrase,
     name: 'post-video-catchphrase'
+  },
+  'check-market': {
+    ...checkMarketCommand,
+    name: 'check-market'
   }
 };
 
@@ -69,4 +74,5 @@ export * from './post-main-tweet';
 export * from './post-gif';
 export * from './quote-tweet';
 export * from './reply-to-tweet';
-export * from './post-video-catchphrase'; 
+export * from './post-video-catchphrase';
+export * from './check-market'; 
